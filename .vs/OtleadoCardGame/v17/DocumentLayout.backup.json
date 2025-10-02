@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\OtleadoCardGame\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|d:\\otleadocardgame\\assets\\scripts\\card.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\card.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Card.cs",
+              "DocumentMoniker": "D:\\OtleadoCardGame\\Assets\\Scripts\\Card.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\Card.cs",
+              "ToolTip": "D:\\OtleadoCardGame\\Assets\\Scripts\\Card.cs",
+              "RelativeToolTip": "Assets\\Scripts\\Card.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-02T12:39:20.977Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
