@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "D:\\OtleadoCardGame\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|d:\\otleadocardgame\\assets\\scripts\\deck.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\deck.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|d:\\otleadocardgame\\assets\\scripts\\card.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{5A27FDAD-04EF-6389-B383-0425762D3059}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\card.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -19,6 +23,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Deck.cs",
+              "DocumentMoniker": "D:\\OtleadoCardGame\\Assets\\Scripts\\Deck.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\Deck.cs",
+              "ToolTip": "D:\\OtleadoCardGame\\Assets\\Scripts\\Deck.cs",
+              "RelativeToolTip": "Assets\\Scripts\\Deck.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAgwBcAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-05T11:04:50.478Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "Card.cs",
               "DocumentMoniker": "D:\\OtleadoCardGame\\Assets\\Scripts\\Card.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\Card.cs",
