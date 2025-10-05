@@ -9,6 +9,7 @@
 [Mm]emoryCaptures/
 
 # Visual Studio / Rider / Mono
+.vs/
 *.csproj
 *.unityproj
 *.sln
