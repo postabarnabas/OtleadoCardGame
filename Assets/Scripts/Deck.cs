@@ -39,10 +39,11 @@ public class Deck
     public List<Card> DrawCards(int count)
     {
         List<Card> drawnCards = new List<Card>();
-        for (int i = 0; i<Cards.Count; i++) 
+        for (int i = 0; i<count; i++) 
         { 
             drawnCards.Add(DrawCard());
         }
+        Cards.RemoveRange(0, count);
         return drawnCards;
     }
 }
