@@ -27,7 +27,7 @@ public class Deck
     public void Shuffle()
     {
         Random rng = new Random();
-        Cards=Cards.OrderBy(card=>rng.Next()).ToList();
+        Cards = Cards.OrderBy(card => rng.Next()).ToList();
     }
     public Card DrawCard()
     {
@@ -39,11 +39,10 @@ public class Deck
     public List<Card> DrawCards(int count)
     {
         List<Card> drawnCards = new List<Card>();
-        for (int i = 0; i<count; i++) 
-        { 
+        for (int i = 0; i < count; i++)
+        {
             drawnCards.Add(DrawCard());
         }
-        Cards.RemoveRange(0, count);
         return drawnCards;
     }
 }
