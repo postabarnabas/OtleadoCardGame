@@ -4,7 +4,7 @@ using UnityEngine;
 public class HandView : MonoBehaviour
 {
     public GameObject cardPrefab;
-    private List<GameObject> spawned = new List<GameObject>();
+    private List<CardView> spawned = new List<CardView>();
 
     private bool isActive = false;
     public bool IsActive => isActive;
@@ -27,13 +27,29 @@ public class HandView : MonoBehaviour
             if (cv != null)
             {
                 cv.parentHand = this;
-                cv.SetCardImage($"Cards/{card.GetCardFileName()}");
+                cv.SetCard(card);
             }
 
-            spawned.Add(g);
+            spawned.Add(cv);
         }
     }
+    public List<CardView> GetSelectedCards()
+    {
+        List<CardView> selected = new List<CardView>();
 
+        foreach (var cv in spawned)
+        {
+            if (cv.IsSelected)
+                selected.Add(cv);
+        }
+
+        return selected;
+    }
+    public void RemoveCard(CardView cv)
+    {
+        spawned.Remove(cv);
+        Destroy(cv.gameObject);
+    }
     public void Clear()
     {
         foreach (var g in spawned)
