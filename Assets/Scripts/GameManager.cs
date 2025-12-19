@@ -7,6 +7,9 @@ public class GameManager : MonoBehaviour
     public List<Player> players = new List<Player>();
     public GameObject cardPrefab; // ezt fogjuk példányosítani (a kártyakép)
     public Transform[] playerAreas; // ide rakjuk a játékos lapjait
+    public int currentPlayerIndex = 0;
+    public HandView[] handViews; // Player1 hand, Player2 hand
+    public TMPro.TextMeshProUGUI currentPlayerText;
 
     void Start()
     {
@@ -17,37 +20,26 @@ public class GameManager : MonoBehaviour
     {
         deck = new Deck();
 
-        // két játékos példaként
         players.Add(new Player("Játékos 1"));
         players.Add(new Player("Játékos 2"));
 
-        // mindenkinek 5 lap
         foreach (var player in players)
-        {
             player.AddCards(deck.DrawCards(5));
-        }
 
-        // lapok megjelenítése
-        DisplayHands();
+        for (int i = 0; i < players.Count; i++)
+            handViews[i].Refresh(players[i]);
+
+        currentPlayerIndex = 0;
+        UpdateTurn();
     }
 
-    void DisplayHands()
+    
+    void UpdateTurn()
     {
-        for (int i = 0; i < players.Count; i++)
-        {
-            foreach (Card card in players[i].Hand)
-            {
-                // Kártya prefab létrehozása a megfelelõ játékos zónában
-                GameObject cardObj = Instantiate(cardPrefab, playerAreas[i]);
+        for (int i = 0; i < handViews.Length; i++)
+            handViews[i].SetActive(i == currentPlayerIndex);
 
-                // CardView komponens beállítása
-                var cardView = cardObj.GetComponent<CardView>();
-                if (cardView != null)
-                {
-                    // A CardView-n keresztül állítjuk be a sprite-ot
-                    cardView.SetCardImage($"Cards/{card.GetCardFileName()}");
-                }
-            }
-        }
+        currentPlayerText.text =
+            $"Aktuális játékos: Player {currentPlayerIndex + 1}";
     }
 }
