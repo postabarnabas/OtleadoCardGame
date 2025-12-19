@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     public int currentPlayerIndex = 0;
     public HandView[] handViews; // Player1 hand, Player2 hand
     public TMPro.TextMeshProUGUI currentPlayerText;
+    public Transform tableArea;
 
     void Start()
     {
@@ -32,8 +33,6 @@ public class GameManager : MonoBehaviour
         currentPlayerIndex = 0;
         UpdateTurn();
     }
-
-    
     void UpdateTurn()
     {
         for (int i = 0; i < handViews.Length; i++)
@@ -41,5 +40,44 @@ public class GameManager : MonoBehaviour
 
         currentPlayerText.text =
             $"Aktuális játékos: Player {currentPlayerIndex + 1}";
+    }
+    void EndTurn()
+    {
+        handViews[currentPlayerIndex].SetActive(false);
+
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+
+        handViews[currentPlayerIndex].SetActive(true);
+        currentPlayerText.text = $"Aktuális játékos: Player {currentPlayerIndex + 1}";
+    }
+    public void OnPlayButtonClicked()
+    {
+        Debug.Log("PLAY GOMB MEGNYOMVA");
+        HandView currentHandView = handViews[currentPlayerIndex];
+        Player currentPlayer = players[currentPlayerIndex];
+
+        var selectedCards = currentHandView.GetSelectedCards();
+
+        if (selectedCards.Count == 0)
+        {
+            Debug.Log("Nincs kiválasztott lap");
+            return;
+        }
+
+        foreach (var cv in selectedCards)
+        {
+            // 1?? logikai eltávolítás
+            currentPlayer.Hand.Remove(cv.card);
+
+            // 2?? UI eltávolítás kézbõl
+            currentHandView.RemoveCard(cv);
+
+            // 3?? UI megjelenítés az asztalon
+            GameObject tableCard = Instantiate(cardPrefab, tableArea);
+            var tableCV = tableCard.GetComponent<CardView>();
+            tableCV.SetCard(cv.card);
+        }
+
+        EndTurn();
     }
 }
