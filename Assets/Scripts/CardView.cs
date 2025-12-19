@@ -1,21 +1,28 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class CardView : MonoBehaviour
+public class CardView : MonoBehaviour, IPointerClickHandler
 {
     public Image image;
-    public bool isSelected = false;
+    public HandView parentHand;
 
-public void OnClick()
-{
-    isSelected = !isSelected;
-    UpdateOutline();
-}
+    private bool isSelected = false;
 
-void UpdateOutline()
-{
-    // UI megvalósítás: pl. színváltás vagy outline
-    GetComponent<Image>().color = isSelected ? Color.yellow : Color.white;
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (parentHand == null) return;
+        if (!parentHand.IsActive) return;
+
+        isSelected = !isSelected;
+        UpdateOutline();
+    }
+
+    void UpdateOutline()
+    {
+        image.color = isSelected ? Color.yellow : Color.white;
+    }
+
     public void SetCardImage(string resourcePath)
     {
         Sprite sprite = Resources.Load<Sprite>(resourcePath);
