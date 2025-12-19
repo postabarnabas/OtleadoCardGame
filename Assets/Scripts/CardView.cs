@@ -6,8 +6,9 @@ public class CardView : MonoBehaviour, IPointerClickHandler
 {
     public Image image;
     public HandView parentHand;
-
+    public Card card;
     private bool isSelected = false;
+    public bool IsSelected => isSelected;
 
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -22,13 +23,14 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     {
         image.color = isSelected ? Color.yellow : Color.white;
     }
-
-    public void SetCardImage(string resourcePath)
+    public void SetCard(Card c)
     {
-        Sprite sprite = Resources.Load<Sprite>(resourcePath);
-        if (sprite != null)
-            image.sprite = sprite;
-        else
-            Debug.LogWarning("Nem található sprite: " + resourcePath);
+        card = c;
+        if (image == null)
+            image = GetComponent<Image>();
+
+        image.sprite = Resources.Load<Sprite>($"Cards/{c.GetCardFileName()}");
     }
+
+    
 }
