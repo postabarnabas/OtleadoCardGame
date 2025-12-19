@@ -3,10 +3,17 @@ using UnityEngine;
 
 public class HandView : MonoBehaviour
 {
-    public GameObject cardPrefab; // a CardPrefab_UI prefab
+    public GameObject cardPrefab;
     private List<GameObject> spawned = new List<GameObject>();
 
-    // Frissítjük a megjelenést a player hand alapján
+    private bool isActive = false;
+    public bool IsActive => isActive;
+
+    public void SetActive(bool value)
+    {
+        isActive = value;
+    }
+
     public void Refresh(Player player)
     {
         Clear();
@@ -16,12 +23,13 @@ public class HandView : MonoBehaviour
         {
             GameObject g = Instantiate(cardPrefab, transform);
             var cv = g.GetComponent<CardView>();
+
             if (cv != null)
             {
-                // Itt alakítjuk a Card objektumot a Resources útvonal formátumára
-                string resourcePath = $"Cards/{card.GetCardFileName()}";
-                cv.SetCardImage(resourcePath);
+                cv.parentHand = this;
+                cv.SetCardImage($"Cards/{card.GetCardFileName()}");
             }
+
             spawned.Add(g);
         }
     }
