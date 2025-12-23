@@ -16,12 +16,15 @@ public class HandView : MonoBehaviour
 
     public void Refresh(Player player)
     {
+        if (player == null)
+            return;
+
         Clear();
-        if (player == null) return;
 
         foreach (var card in player.Hand)
         {
             GameObject g = Instantiate(cardPrefab, transform);
+
             var cv = g.GetComponent<CardView>();
 
             if (cv != null)
@@ -33,6 +36,7 @@ public class HandView : MonoBehaviour
             spawned.Add(cv);
         }
     }
+
     public List<CardView> GetSelectedCards()
     {
         List<CardView> selected = new List<CardView>();
@@ -52,8 +56,15 @@ public class HandView : MonoBehaviour
     }
     public void Clear()
     {
+
         foreach (var g in spawned)
-            if (g != null) Destroy(g);
+        {
+            if (g != null)
+            {
+                Destroy(g.gameObject);
+            }
+        }
         spawned.Clear();
     }
+
 }
