@@ -20,6 +20,12 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         // 🔴 BEAT fázis
         if (gm.currentPhase == GameManager.TurnPhase.Beat)
         {
+            // 🔥 ÜTÉSI CÉL KIVÁLASZTÁSA
+            if (gm.IsSelectingBeatTarget(this))
+            {
+                gm.ResolveBeatSelection(this);
+                return;
+            }
             // 🟡 ASZTALI LAP → felvétel kijelölése
             if (parentHand == null && isPickupSelectable)
             {
