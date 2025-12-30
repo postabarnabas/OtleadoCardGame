@@ -2383,6 +2383,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   currentPhase: 0
+  deckarea: {fileID: 2002083128}
   cardPrefab: {fileID: 5704052929014118338, guid: dc2dfe06fdec9e14082ba5fcba7c41a6, type: 3}
   playerAreas:
   - {fileID: 1147112921}
