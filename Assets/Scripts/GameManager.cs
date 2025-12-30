@@ -250,6 +250,8 @@ public class GameManager : MonoBehaviour
         {
             deckarea.SetActive(false);
         }
+
+        CheckEndGame();
     }
     void EnablePickupOnPlayedCards()
     {
@@ -427,9 +429,30 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
-    void EndGame()
+    void CheckEndGame()
     {
-        
+        if (players[0].Hand.Count == 0)
+        {
+            EndGame(winnerIndex: 0, loserIndex: 1);
+            return;
+        }
+
+        if (players[1].Hand.Count == 0)
+        {
+            EndGame(winnerIndex: 1, loserIndex: 0);
+            return;
+        }
+    }
+    void EndGame(int winnerIndex, int loserIndex)
+    {
+        Debug.Log($"Winner: Player {winnerIndex}");
+        Debug.Log($"Loser: Player {loserIndex}");
+        currentPlayerText.text = "Győztes: Player" + winnerIndex
+                         + "\n" +"Vesztes: Player" + loserIndex;
+
+        // Gombok tiltása
+        HideBeatButton();
+        HidePickupButton();
+        HidePlayButton();
     }
 }
