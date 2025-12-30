@@ -29,6 +29,11 @@ public class GameManager : MonoBehaviour
     private List<Card> pickedUpThisTurn = new List<Card>();
     bool hasPickedUpThisTurn => pickedUpThisTurn.Count > 0;
 
+    private CardView pendingAttacker = null;
+    private List<CardView> pendingTargets = new();
+    public TMPro.TextMeshProUGUI moreThanOneBeatSelectionText;
+
+
     void Start()
     {
         StartGame();
@@ -85,6 +90,17 @@ public class GameManager : MonoBehaviour
     {
         beatButton.SetActive(true);
     }
+    void ShowMoreThanOneBeatSelectionText()
+    {
+        moreThanOneBeatSelectionText.text = "Válaszd ki, melyik lapot ütöd";
+        moreThanOneBeatSelectionText.gameObject.SetActive(true);
+    }
+    void HideMoreThanOneBeatSelectionText()
+    {
+        moreThanOneBeatSelectionText.text = null;
+        moreThanOneBeatSelectionText.gameObject.SetActive(false);
+    }
+
     #endregion
     void EndTurn()
     {
@@ -312,6 +328,8 @@ public class GameManager : MonoBehaviour
             EndTurn();
         }
     }
+    //ütés
+    #region
     public void TryBeatWithCard(CardView attacker)
     {
         if (pickedUpThisTurn.Contains(attacker.card))
@@ -347,7 +365,14 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("⚠ Több lap üthető → választás kell (később popup)");
+        // 🔥 TÖBB CÉL → választási mód
+        pendingAttacker = attacker;
+        pendingTargets = beatable;
+
+        ShowMoreThanOneBeatSelectionText();
+        HighlightBeatTargets(true);
+
+        Debug.Log("🟡 Válassz egy lapot, amit elütsz");
     }
     bool CanBeat(Card attacker, Card target)
     {
@@ -385,6 +410,29 @@ public class GameManager : MonoBehaviour
         attackerRt.SetAsLastSibling();
 
     }
+    void HighlightBeatTargets(bool enable)
+    {
+        foreach (var cv in pendingTargets)
+        {
+            cv.image.color = enable ? Color.cyan : Color.white;
+        }
+    }
+    public bool IsSelectingBeatTarget(CardView target)
+    {
+        return pendingAttacker != null && pendingTargets.Contains(target);
+    }
+
+    public void ResolveBeatSelection(CardView target)
+    {
+        BeatCard(pendingAttacker, target);
+
+        HighlightBeatTargets(false);
+        HideMoreThanOneBeatSelectionText();
+
+        pendingAttacker = null;
+        pendingTargets.Clear();
+    }
+
     public void OnBeatButtonClicked()
     {
         if (currentPhase != TurnPhase.Beat)
@@ -428,7 +476,9 @@ public class GameManager : MonoBehaviour
             EndTurn();
         }
     }
-
+    #endregion
+    //játék vége
+    #region
     void CheckEndGame()
     {
         if (players[0].Hand.Count == 0)
@@ -455,4 +505,5 @@ public class GameManager : MonoBehaviour
         HidePickupButton();
         HidePlayButton();
     }
+    #endregion
 }
