@@ -188,6 +188,27 @@ public class GameManager : MonoBehaviour
     bool IsValidSelection(List<Card> cards)
     {
         int count = cards.Count;
+        int defenderIndex = (currentPlayerIndex + 1) % players.Count;
+        int defenderHandCount = players[defenderIndex].Hand.Count;
+
+        // 🔒 TALON ÜRES KORLÁTOZÁS
+        if (deck.Cards.Count == 0 && defenderHandCount < 5)
+        {
+            if (defenderHandCount <= 2 && count != 1)
+            {
+                Debug.Log("Ebben az állásban csak 1 lap adható.");
+                return false;
+            }
+
+            if (defenderHandCount >= 3 && defenderHandCount <= 4 &&
+                !(count == 1 || count == 3))
+            {
+                Debug.Log("Ebben az állásban csak 1 vagy 3 lap adható.");
+                return false;
+            }
+        }
+
+
 
         if (count == 1)
             return true;
@@ -204,6 +225,7 @@ public class GameManager : MonoBehaviour
         {
             return IsValidFive(cards);
         }
+        Debug.Log("1, 3 vagy 5 lapot lehet leadni.");
         return false;
     }
     bool IsValidThree(List<Card> cards)
