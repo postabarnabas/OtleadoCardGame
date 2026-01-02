@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -32,6 +33,7 @@ public class GameManager : MonoBehaviour
     private CardView pendingAttacker = null;
     private List<CardView> pendingTargets = new();
     public TMPro.TextMeshProUGUI moreThanOneBeatSelectionText;
+    public TMPro.TextMeshProUGUI errorText;
 
 
     void Start()
@@ -62,7 +64,7 @@ public class GameManager : MonoBehaviour
             handViews[i].SetActive(i == currentPlayerIndex);
 
         currentPlayerText.text =
-            $"Aktuális játékos: Player {currentPlayerIndex + 1}";
+            $"Lapot ad le: Player {currentPlayerIndex + 1}";
     }
     //gombok elrejtése és előhívása
     #region
@@ -100,7 +102,25 @@ public class GameManager : MonoBehaviour
         moreThanOneBeatSelectionText.text = null;
         moreThanOneBeatSelectionText.gameObject.SetActive(false);
     }
+    Coroutine errorCoroutine;
+    void ShowError(string message, float duration = 2.5f)
+    {
+        if (errorCoroutine != null)
+            StopCoroutine(errorCoroutine);
 
+        errorCoroutine = StartCoroutine(ShowErrorRoutine(message, duration));
+    }
+    IEnumerator ShowErrorRoutine(string message, float duration)
+    {
+        errorText.text = message;
+        errorText.color = Color.red;
+        errorText.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(duration);
+
+        errorText.text = "";
+        errorText.gameObject.SetActive(false);
+    }
     #endregion
     void EndTurn()
     {
@@ -139,7 +159,7 @@ public class GameManager : MonoBehaviour
 
         if (selectedCardViews.Count == 0)
         {
-            Debug.Log("Nincs kiválasztott lap");
+            ShowError("Nincs kijelölt lap");
             return;
         }
 
@@ -196,14 +216,14 @@ public class GameManager : MonoBehaviour
         {
             if (defenderHandCount <= 2 && count != 1)
             {
-                Debug.Log("Ebben az állásban csak 1 lap adható.");
+                ShowError("Ebben az állásban csak 1 lap adható.");
                 return false;
             }
 
             if (defenderHandCount >= 3 && defenderHandCount <= 4 &&
                 !(count == 1 || count == 3))
             {
-                Debug.Log("Ebben az állásban csak 1 vagy 3 lap adható.");
+                ShowError("Ebben az állásban csak 1 vagy 3 lap adható.");
                 return false;
             }
         }
@@ -214,7 +234,7 @@ public class GameManager : MonoBehaviour
             return true;
         if (count == 2 || count == 4)
         {
-            Debug.Log("1, 3 vagy 5 lapot lehet leadni.");
+            ShowError("1, 3 vagy 5 lapot lehet leadni.");
             return false;
         }
         if (count == 3)
@@ -225,7 +245,7 @@ public class GameManager : MonoBehaviour
         {
             return IsValidFive(cards);
         }
-        Debug.Log("1, 3 vagy 5 lapot lehet leadni.");
+        ShowError("1, 3 vagy 5 lapot lehet leadni.");
         return false;
     }
     bool IsValidThree(List<Card> cards)
@@ -236,12 +256,12 @@ public class GameManager : MonoBehaviour
 
         if (r1 == r2 && r2 == r3)
         {
-            Debug.Log("Érvénytelen lapkombináció");
+            ShowError("Érvénytelen lapkombináció");
             return false;
         }
         if (r1 != r2 && r1 != r3 && r2 != r3)
         {
-            Debug.Log("Érvénytelen lapkombináció");
+            ShowError("Érvénytelen lapkombináció");
             return false;
         }
         // egy pár és egy különböző
@@ -266,7 +286,7 @@ public class GameManager : MonoBehaviour
 
         if (counts.SequenceEqual(new List<int> { 1, 2, 2 })) return true;
         if (counts.SequenceEqual(new List<int> { 1, 4 })) return true;
-        Debug.Log("Érvénytelen lapkombináció");
+        ShowError("Érvénytelen lapkombináció");
         return false;
 
     }
@@ -320,7 +340,7 @@ public class GameManager : MonoBehaviour
 
         if (selected.Count == 0)
         {
-            Debug.Log("Nincs kiválasztott lap felvételhez");
+            ShowError("Nincs kiválasztott lap felvételhez");
             return;
         }
 
@@ -356,7 +376,7 @@ public class GameManager : MonoBehaviour
     {
         if (pickedUpThisTurn.Contains(attacker.card))
         {
-            Debug.Log("❌ Felvett lappal ebben a körben nem üthetsz");
+            ShowError("Felvett lappal ebben a körben nem üthetsz");
             return;
         }
         // összes leadott lap lekérése
@@ -377,7 +397,7 @@ public class GameManager : MonoBehaviour
         }
         if (beatable.Count == 0)
         {
-            Debug.Log("❌ Ezzel a lappal egyet sem lehet ütni");
+            ShowError("Ezzel a lappal egyet sem lehet ütni");
             return;
         }
 
@@ -393,8 +413,6 @@ public class GameManager : MonoBehaviour
 
         ShowMoreThanOneBeatSelectionText();
         HighlightBeatTargets(true);
-
-        Debug.Log("🟡 Válassz egy lapot, amit elütsz");
     }
     bool CanBeat(Card attacker, Card target)
     {
@@ -475,7 +493,7 @@ public class GameManager : MonoBehaviour
 
         if (toDestroy.Count == 0)
         {
-            Debug.Log("Nincs elütött lap");
+            ShowError("Nincs elütött lap");
             return;
         }
 
@@ -505,20 +523,18 @@ public class GameManager : MonoBehaviour
     {
         if (players[0].Hand.Count == 0)
         {
-            EndGame(winnerIndex: 0, loserIndex: 1);
+            EndGame(winnerIndex: 1, loserIndex: 2);
             return;
         }
 
         if (players[1].Hand.Count == 0)
         {
-            EndGame(winnerIndex: 1, loserIndex: 0);
+            EndGame(winnerIndex: 2, loserIndex: 1);
             return;
         }
     }
     void EndGame(int winnerIndex, int loserIndex)
     {
-        Debug.Log($"Winner: Player {winnerIndex}");
-        Debug.Log($"Loser: Player {loserIndex}");
         currentPlayerText.text = "Győztes: Player" + winnerIndex
                          + "\n" +"Vesztes: Player" + loserIndex;
 
