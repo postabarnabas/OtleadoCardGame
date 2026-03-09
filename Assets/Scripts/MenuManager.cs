@@ -3,7 +3,9 @@ using UnityEngine.SceneManagement;
 
 public class MenuManager : MonoBehaviour
 {
-    public void StartHumanVsHuman()
+    public GameObject personVsPersonButton;
+    public GameObject personVsAIButton;
+    public void StartPersonVsPerson()
     {
         GameSettings.playWithAI=false;
         SceneManager.LoadScene("Game");
@@ -13,5 +15,9 @@ public class MenuManager : MonoBehaviour
     {
         GameSettings.playWithAI=true;
         SceneManager.LoadScene("Game");
+    }
+    public void OnPersonVsPersonButtonClicked()
+    {
+        StartPersonVsPerson();
     }
 }
