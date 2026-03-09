@@ -11,13 +11,9 @@ public class MenuManager : MonoBehaviour
         SceneManager.LoadScene("Game");
     }
 
-    public void StartHumanVsAI()
+    public void StartPersonVsAI()
     {
         GameSettings.playWithAI=true;
         SceneManager.LoadScene("Game");
-    }
-    public void OnPersonVsPersonButtonClicked()
-    {
-        StartPersonVsPerson();
     }
 }

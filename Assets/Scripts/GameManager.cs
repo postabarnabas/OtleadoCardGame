@@ -44,8 +44,14 @@ public class GameManager : MonoBehaviour
     {
         deck = new Deck();
 
-        players.Add(new Player("Játékos 1"));
-        players.Add(new Player("Játékos 2"));
+        players.Clear();
+
+        players.Add(new Player("Játékos 1", false));
+
+        if (GameSettings.playWithAI)
+            players.Add(new Player("AI", true));
+        else
+            players.Add(new Player("AI", false));
 
         foreach (var player in players)
             player.AddCards(deck.DrawCards(5));
