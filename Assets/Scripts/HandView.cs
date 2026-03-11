@@ -43,7 +43,7 @@ public class HandView : MonoBehaviour
 
         foreach (var cv in spawned)
         {
-            if (cv.IsSelected)
+            if (cv.isSelected)
                 selected.Add(cv);
         }
 

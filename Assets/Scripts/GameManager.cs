@@ -46,12 +46,12 @@ public class GameManager : MonoBehaviour
 
         players.Clear();
 
-        players.Add(new Player("Játékos 1", false));
-
         if (GameSettings.playWithAI)
-            players.Add(new Player("AI", true));
+            players.Add(new AIPlayer("AI"));
         else
-            players.Add(new Player("AI", false));
+            players.Add(new Player("Játékos 1", false));
+
+        players.Add(new Player("Játékos 2", false));
 
         foreach (var player in players)
             player.AddCards(deck.DrawCards(5));
@@ -66,12 +66,21 @@ public class GameManager : MonoBehaviour
     }
     void UpdateTurn()
     {
+        Debug.Log("Updateturn - currentplayerindex: " + currentPlayerIndex);
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(i == currentPlayerIndex);
 
         currentPlayerText.text =
             $"Lapot ad le: Player {currentPlayerIndex + 1}";
+
+        Player current = players[currentPlayerIndex];
+        if (current.IsAI)
+        {
+            StartCoroutine(AITurn());
+        }
+    
     }
+
     //gombok elrejtése és előhívása
     #region
     void HidePlayButton()
@@ -132,25 +141,23 @@ public class GameManager : MonoBehaviour
     {
         StartCoroutine(RefillAfterDelay(players[currentPlayerIndex]));
 
-        // ha felvett → vissza arra, aki leadott
         if (hasPickedUpThisTurn)
         {
             currentPlayerIndex =
                 (currentPlayerIndex - 1 + players.Count) % players.Count;
         }
 
-        // kör újraindítása
         currentPhase = TurnPhase.Give;
         pickedUpThisTurn.Clear();
 
-        // UI reset
         ShowPlayButton();
         HidePickupButton();
         HideBeatButton();
 
         UpdateTurn();
     }
-
+    //leadás
+    #region
     public void OnPlayButtonClicked()
     {
         if (currentPhase != TurnPhase.Give)
@@ -180,13 +187,10 @@ public class GameManager : MonoBehaviour
 
         foreach (var cv in selectedCardViews)
         {
-            // logikai eltávolítás
             currentPlayer.Hand.Remove(cv.card);
 
-            // UI eltávolítás kézből
             currentHandView.RemoveCard(cv);
 
-            // UI megjelenítés az asztalon
             GameObject tableCard = Instantiate(cardPrefab);
             tableCard.transform.SetParent(playedArea, false);
             var tableCardView = tableCard.GetComponent<CardView>();
@@ -210,6 +214,12 @@ public class GameManager : MonoBehaviour
 
         currentPlayerText.text =
             $"Üt / felvesz: Player {currentPlayerIndex + 1}";
+
+        // HA AI jön ütni
+        if (players[currentPlayerIndex].IsAI)
+        {
+            StartCoroutine(AITurn());
+        }
     }
     bool IsValidSelection(List<Card> cards)
     {
@@ -217,7 +227,6 @@ public class GameManager : MonoBehaviour
         int defenderIndex = (currentPlayerIndex + 1) % players.Count;
         int defenderHandCount = players[defenderIndex].Hand.Count;
 
-        // 🔒 TALON ÜRES KORLÁTOZÁS
         if (deck.Cards.Count == 0 && defenderHandCount < 5)
         {
             if (defenderHandCount <= 2 && count != 1)
@@ -317,6 +326,7 @@ public class GameManager : MonoBehaviour
 
         CheckEndGame();
     }
+    #endregion
     void EnablePickupOnPlayedCards()
     {
         foreach (Transform t in playedArea)
@@ -340,7 +350,7 @@ public class GameManager : MonoBehaviour
         foreach (Transform t in playedArea)
         {
             CardView cv = t.GetComponent<CardView>();
-            if (cv != null && cv.IsSelected)
+            if (cv != null && cv.isSelected)
                 selected.Add(cv);
         }
 
@@ -350,7 +360,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // 👉 FELVÉTEL
         foreach (var cv in selected)
         {
             pickedUpThisTurn.Add(cv.card);
@@ -360,7 +369,6 @@ public class GameManager : MonoBehaviour
 
         handViews[currentPlayerIndex].Refresh(players[currentPlayerIndex]);
 
-        // 👉 ITT jön a döntés
         bool hasUnbeaten = false;
         foreach (Transform t in playedArea)
         {
@@ -385,7 +393,6 @@ public class GameManager : MonoBehaviour
             ShowError("Felvett lappal ebben a körben nem üthetsz");
             return;
         }
-        // összes leadott lap lekérése
         List<CardView> targets = new List<CardView>();
         foreach (Transform t in playedArea)
         {
@@ -394,7 +401,6 @@ public class GameManager : MonoBehaviour
                 targets.Add(cv);
         }
 
-        // melyeket tudja ütni?
         List<CardView> beatable = new List<CardView>();
         foreach (var target in targets)
         {
@@ -413,7 +419,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // 🔥 TÖBB CÉL → választási mód
         pendingAttacker = attacker;
         pendingTargets = beatable;
 
@@ -433,13 +438,10 @@ public class GameManager : MonoBehaviour
         RectTransform attackerRt = attacker.GetComponent<RectTransform>();
         RectTransform targetRt = target.GetComponent<RectTransform>();
 
-        // 1️⃣ target világpozíció
         Vector3 targetWorldPos = targetRt.position;
 
-        // 2️⃣ parent váltás
         attackerRt.SetParent(beatArea, false);
 
-        // 3️⃣ világ → beatArea lokális pozíció
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             beatArea as RectTransform,
@@ -448,7 +450,6 @@ public class GameManager : MonoBehaviour
             out localPoint
         );
 
-        // 4️⃣ finom eltolás (fél takarás)
         float yOffset = -targetRt.rect.height * 0.25f;
         attackerRt.anchoredPosition = localPoint + new Vector2(0f, yOffset);
 
@@ -506,7 +507,6 @@ public class GameManager : MonoBehaviour
         foreach (var cv in toDestroy)
             Destroy(cv.gameObject);
 
-        // 👉 ITT jön a lényeg
         bool hasUnbeaten = false;
         foreach (Transform t in playedArea)
         {
@@ -544,10 +544,105 @@ public class GameManager : MonoBehaviour
         currentPlayerText.text = "Győztes: Player" + winnerIndex
                          + "\n" +"Vesztes: Player" + loserIndex;
 
-        // Gombok tiltása
         HideBeatButton();
         HidePickupButton();
         HidePlayButton();
     }
     #endregion
+
+    //ai
+    IEnumerator AITurn()
+    {
+        yield return new WaitForSeconds(1f);
+
+        AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
+
+        if (ai == null)
+            yield break;
+
+        if (currentPhase == TurnPhase.Give)
+        {
+            yield return StartCoroutine(AIGiveCard());
+        }
+        else if (currentPhase == TurnPhase.Beat)
+        {
+            yield return StartCoroutine(AIBeatOrPickup());
+        }
+    }
+    IEnumerator AIGiveCard()
+    {
+        HandView aiHandView = handViews[currentPlayerIndex];
+
+        CardView firstCard = null;
+
+        foreach (Transform t in aiHandView.transform)
+        {
+            firstCard = t.GetComponent<CardView>();
+            if (firstCard != null)
+                break;
+        }
+        yield return new WaitForSeconds(0.7f);
+
+        firstCard.isSelected = true;
+        firstCard.UpdateOutline();
+
+        OnPlayButtonClicked();
+    }
+    IEnumerator AIBeatOrPickup()
+    {
+        AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
+        HandView aiHandView = handViews[currentPlayerIndex];
+
+        List<CardView> targets = new();
+
+        foreach (Transform t in playedArea)
+        {
+            CardView cv = t.GetComponent<CardView>();
+            if (cv != null && !cv.IsBeaten)
+                targets.Add(cv);
+        }
+
+        if (targets.Count == 0)
+            yield break;
+
+        CardView target = targets[0];
+
+        yield return new WaitForSeconds(0.3f); // gondolkodik
+
+        foreach (Transform t in aiHandView.transform)
+        {
+            CardView attacker = t.GetComponent<CardView>();
+
+            if (attacker != null && CanBeat(attacker.card, target.card))
+            {
+                yield return new WaitForSeconds(0.3f); // kiválasztja
+
+                TryBeatWithCard(attacker);
+
+                yield return new WaitForSeconds(0.4f); // ütés után kis pause
+
+                OnBeatButtonClicked();
+            }
+        }
+
+        // ha nem tud ütni
+        yield return new WaitForSeconds(0.5f);
+
+        PickupAllCards();
+    }
+    void PickupAllCards()
+    {
+        foreach (Transform t in playedArea)
+        {
+            CardView cv = t.GetComponent<CardView>();
+
+            if (cv != null)
+            {
+                cv.isSelected = true;
+                cv.UpdateOutline();
+            }
+        }
+
+        OnPickupButtonClicked();
+    }
 }
