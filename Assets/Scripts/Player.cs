@@ -6,7 +6,6 @@ public class Player
     public string Name { get; private set; }
     public List<Card> Hand {  get; private set; }
     public bool IsAI { get; private set; }
-
     public Player(string name, bool isAI = false)
     {
         Name = name;

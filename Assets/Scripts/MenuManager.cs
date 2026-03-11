@@ -10,7 +10,6 @@ public class MenuManager : MonoBehaviour
         GameSettings.playWithAI=false;
         SceneManager.LoadScene("Game");
     }
-
     public void StartPersonVsAI()
     {
         GameSettings.playWithAI=true;
