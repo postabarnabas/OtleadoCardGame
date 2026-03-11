@@ -571,20 +571,29 @@ public class GameManager : MonoBehaviour
     }
     IEnumerator AIGiveCard()
     {
+        AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
         HandView aiHandView = handViews[currentPlayerIndex];
 
-        CardView firstCard = null;
+        List<Card> cardsToGive = ai.SelectCardsToGive();
 
-        foreach (Transform t in aiHandView.transform)
-        {
-            firstCard = t.GetComponent<CardView>();
-            if (firstCard != null)
-                break;
-        }
         yield return new WaitForSeconds(0.7f);
 
-        firstCard.isSelected = true;
-        firstCard.UpdateOutline();
+        foreach (Card card in cardsToGive)
+        {
+            foreach (Transform t in aiHandView.transform)
+            {
+                CardView cv = t.GetComponent<CardView>();
+
+                if (cv != null && cv.card == card)
+                {
+                    cv.isSelected = true;
+                    cv.UpdateOutline();
+                    break;
+                }
+            }
+        }
+
+        yield return new WaitForSeconds(0.4f);
 
         OnPlayButtonClicked();
     }
