@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
     }
     void UpdateTurn()
     {
-        Debug.Log("Updateturn - currentplayerindex: " + currentPlayerIndex);
+       // Debug.Log("Updateturn - currentplayerindex: " + currentPlayerIndex);
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(i == currentPlayerIndex);
 
@@ -425,7 +425,7 @@ public class GameManager : MonoBehaviour
         ShowMoreThanOneBeatSelectionText();
         HighlightBeatTargets(true);
     }
-    bool CanBeat(Card attacker, Card target)
+    public bool CanBeat(Card attacker, Card target)
     {
         return (int)attacker.Rank > (int)target.Rank && (int)attacker.Suit==(int)target.Suit;
     }
@@ -503,7 +503,6 @@ public class GameManager : MonoBehaviour
             ShowError("Nincs elütött lap");
             return;
         }
-
         foreach (var cv in toDestroy)
             Destroy(cv.gameObject);
 
@@ -554,11 +553,7 @@ public class GameManager : MonoBehaviour
     IEnumerator AITurn()
     {
         yield return new WaitForSeconds(1f);
-
         AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
-
-        if (ai == null)
-            yield break;
 
         if (currentPhase == TurnPhase.Give)
         {
@@ -574,7 +569,13 @@ public class GameManager : MonoBehaviour
         AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
         HandView aiHandView = handViews[currentPlayerIndex];
 
-        List<Card> cardsToGive = ai.SelectCardsToGive();
+        int opponentIndex = (currentPlayerIndex + 1) % players.Count;
+
+        int opponentCardCount = players[opponentIndex].Hand.Count;
+
+        bool talonEmpty = deck.Cards.Count == 0;
+
+        List<Card> cardsToGive = ai.SelectCardsToGive(opponentCardCount, talonEmpty);
 
         yield return new WaitForSeconds(0.7f);
 
@@ -602,42 +603,48 @@ public class GameManager : MonoBehaviour
         AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
         HandView aiHandView = handViews[currentPlayerIndex];
 
-        List<CardView> targets = new();
+        yield return new WaitForSeconds(0.4f);
 
-        foreach (Transform t in playedArea)
+        while (true)
         {
-            CardView cv = t.GetComponent<CardView>();
-            if (cv != null && !cv.IsBeaten)
-                targets.Add(cv);
-        }
+            List<CardView> targets = new();
 
-        if (targets.Count == 0)
-            yield break;
-
-        CardView target = targets[0];
-
-        yield return new WaitForSeconds(0.3f); // gondolkodik
-
-        foreach (Transform t in aiHandView.transform)
-        {
-            CardView attacker = t.GetComponent<CardView>();
-
-            if (attacker != null && CanBeat(attacker.card, target.card))
+            foreach (Transform t in playedArea)
             {
-                yield return new WaitForSeconds(0.3f); // kiválasztja
+                CardView cv = t.GetComponent<CardView>();
 
-                TryBeatWithCard(attacker);
-
-                yield return new WaitForSeconds(0.4f); // ütés után kis pause
-
-                OnBeatButtonClicked();
+                if (cv != null && !cv.IsBeaten)
+                    targets.Add(cv);
             }
+
+            if (targets.Count == 0)
+                yield break;
+
+            // AI dönt
+            AIBeatDecision decision = ai.DecideBeat(targets, aiHandView, this);
+
+            if (decision.pickup)
+            {
+                yield return new WaitForSeconds(0.5f);
+                PickupAllCards();
+                yield break;
+            }
+
+            yield return new WaitForSeconds(0.3f);
+
+            TryBeatWithCard(decision.card);
+
+            yield return new WaitForSeconds(0.2f);
+
+            if (pendingAttacker != null && pendingTargets.Count > 0)
+            {
+                ResolveBeatSelection(decision.target);
+            }
+
+            yield return new WaitForSeconds(0.3f);
+
+            OnBeatButtonClicked();
         }
-
-        // ha nem tud ütni
-        yield return new WaitForSeconds(0.5f);
-
-        PickupAllCards();
     }
     void PickupAllCards()
     {

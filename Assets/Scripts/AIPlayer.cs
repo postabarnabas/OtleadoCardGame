@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -8,94 +8,392 @@ public class AIPlayer : Player
     {
 
     }
-    public List<Card> SelectCardsToGive()
+    public List<Card> SelectCardsToGive(int opponentCardCount, bool talonEmpty)
     {
-        List<Card> result = FindFiveCardCombination();
+        var moves = GenerateAllMoves(opponentCardCount, talonEmpty);
 
-        if (result != null)
-            return result;
+        AIMove bestMove = null;
+        int bestScore = int.MinValue;
 
-        result = FindThreeCardCombination();
-
-        if (result != null)
-            return result;
-
-        Card weakest = GetWeakestCard();
-
-        if (weakest != null)
-            return new List<Card> { weakest };
-
-        return new List<Card>();
-    }
-
-    private Card GetWeakestCard()
-    {
-        return Hand.OrderBy(c => (int)c.Rank).FirstOrDefault();
-    }
-    private List<Card> FindThreeCardCombination()
-    {
-        var groups = Hand.GroupBy(c => c.Rank);
-
-        foreach (var group in groups)
+        foreach (var move in moves)
         {
-            if (group.Count() >= 2)
+            int score = EvaluateMove(move, talonEmpty);
+
+            if (score > bestScore)
             {
-                Card first = group.ElementAt(0);
-                Card second = group.ElementAt(1);
-
-                Card third = Hand
-                    .Where(c => c.Rank != group.Key)
-                    .OrderBy(c => (int)c.Rank)
-                    .FirstOrDefault();
-
-                if (third != null)
-                {
-                    return new List<Card> { first, second, third };
-                }
+                bestScore = score;
+                bestMove = move;
             }
         }
 
-        return null;
+        return bestMove.Cards;
     }
-    private List<Card> FindFiveCardCombination()
+    private List<AIMove> GenerateAllMoves(int opponentCardCount, bool talonEmpty)
     {
-        var groups = Hand
+        List<AIMove> moves = new List<AIMove>();
+
+        int maxLead = 5;
+
+        if (talonEmpty)
+            maxLead = opponentCardCount;
+
+        AddSingleCardMoves(moves);
+
+        if (maxLead >= 3)
+            AddThreeCardMoves(moves);
+
+        if (maxLead >= 5)
+            AddFiveCardMoves(moves);
+        moves = moves
+    .GroupBy(m => string.Join(",", m.Cards.Select(c => c.Rank)))
+    .Select(g => g.First())
+    .ToList();
+        return moves;
+    }
+    private void AddSingleCardMoves(List<AIMove> moves)
+    {
+        foreach (var card in Hand)
+        {
+            moves.Add(new AIMove(new List<Card> { card }));
+        }
+    }
+    private void AddThreeCardMoves(List<AIMove> moves)
+    {
+        var groups = Hand.GroupBy(c => c.Rank);
+
+        foreach (var pair in groups.Where(g => g.Count() >= 2))
+        {
+            var pairCards = pair.Take(2).ToList();
+
+            foreach (var extra in Hand.Where(c => c.Rank != pair.Key))
+            {
+                List<Card> moveCards = new List<Card>
+            {
+                pairCards[0],
+                pairCards[1],
+                extra
+            };
+
+                moves.Add(new AIMove(moveCards));
+            }
+        }
+    }
+    private void AddFiveCardMoves(List<AIMove> moves)
+    {
+        var pairs = Hand
             .GroupBy(c => c.Rank)
             .Where(g => g.Count() >= 2)
             .ToList();
 
-        if (groups.Count < 2)
-            return null;
-
-        for (int i = 0; i < groups.Count; i++)
+        for (int i = 0; i < pairs.Count; i++)
         {
-            for (int j = i + 1; j < groups.Count; j++)
+            for (int j = i + 1; j < pairs.Count; j++)
             {
-                Card first1 = groups[i].ElementAt(0);
-                Card first2 = groups[i].ElementAt(1);
+                var firstPair = pairs[i].Take(2).ToList();
+                var secondPair = pairs[j].Take(2).ToList();
 
-                Card second1 = groups[j].ElementAt(0);
-                Card second2 = groups[j].ElementAt(1);
-
-                Card extra = Hand
-                    .Where(c => c.Rank != groups[i].Key && c.Rank != groups[j].Key)
-                    .OrderBy(c => (int)c.Rank)
-                    .FirstOrDefault();
-
-                if (extra != null)
+                foreach (var extra in Hand.Where(c => c.Rank != pairs[i].Key && c.Rank != pairs[j].Key))
                 {
-                    return new List<Card>
+                    List<Card> moveCards = new List<Card>
                 {
-                    first1,
-                    first2,
-                    second1,
-                    second2,
+                    firstPair[0],
+                    firstPair[1],
+                    secondPair[0],
+                    secondPair[1],
                     extra
                 };
+
+                    moves.Add(new AIMove(moveCards));
                 }
             }
         }
 
-        return null;
+        AddFourOfAKindMoves(moves);
+    }
+    private void AddFourOfAKindMoves(List<AIMove> moves)
+    {
+        var fours = Hand
+            .GroupBy(c => c.Rank)
+            .Where(g => g.Count() >= 4);
+
+        foreach (var four in fours)
+        {
+            var fourCards = four.Take(4).ToList();
+
+            foreach (var extra in Hand.Where(c => c.Rank != four.Key))
+            {
+                List<Card> moveCards = new List<Card>
+                {
+                fourCards[0],
+                fourCards[1],
+                fourCards[2],
+                fourCards[3],
+                extra
+                };
+                moves.Add(new AIMove(moveCards));
+            }
+        }
+    }
+    private int EvaluateMove(AIMove move, bool talonEmpty)
+    {
+        // ha az AI le tudja adni az összes lapját -> nyer
+        if (move.Cards.Count == Hand.Count)
+            return 10000;
+
+        int score = 0;
+
+        List<Card> remaining = new List<Card>(Hand);
+
+        foreach (var card in move.Cards)
+            remaining.Remove(card);
+
+        //-------------------------------------------------
+        // mennyi lapot ad le
+        //-------------------------------------------------
+        // --------------------------------------------------
+        // erős lap egyedül leadása nagyon rossz
+        // --------------------------------------------------
+
+        if (move.Cards.Count == 1)
+        {
+            var card = move.Cards[0];
+            int rank = (int)card.Rank;
+
+            if (rank >= 11) // felső vagy erősebb
+                score -= 120;
+
+            if (rank >= 13) // ász
+                score -= 150;
+        }
+
+        if (move.Cards.Count == 5)
+            score += 500;
+
+        else if (move.Cards.Count == 3)
+            score += 250;
+
+        else
+            score += 10;
+
+        //-------------------------------------------------
+        // milyen lapokat ad le
+        //-------------------------------------------------
+
+        foreach (var card in move.Cards)
+        {
+            int rank = (int)card.Rank;
+
+            // gyenge lap leadása jó
+            if (rank <= 9)
+                score += 15;
+
+            // 10 leadása sem rossz
+            if (rank == 10)
+                score += 5;
+
+            // felső
+            if (rank == 11)
+                score -= 20;
+
+            // király
+            if (rank == 12)
+                score -= 40;
+
+            // ász
+            if (rank == 13)
+                score -= 80;
+        }
+
+        //-------------------------------------------------
+        // mi marad a kézben
+        //-------------------------------------------------
+
+        var groups = remaining.GroupBy(c => c.Rank);
+
+        foreach (var g in groups)
+        {
+            if (g.Count() == 4)
+                score += 150;
+
+            if (g.Count() == 3)
+                score += 100;
+
+            if (g.Count() == 2)
+            {
+                int rank = (int)g.Key;
+
+                if (rank <= 9)
+                    score += 30;
+
+                if (rank == 10)
+                    score += 50;
+
+                if (rank == 11)
+                    score += 80;
+
+                if (rank == 12)
+                    score += 120;
+
+                if (rank == 13)
+                    score += 160;
+            }
+        }
+
+        //-------------------------------------------------
+        // gyenge lap maradása rossz
+        //-------------------------------------------------
+
+        foreach (var card in remaining)
+        {
+            int rank = (int)card.Rank;
+
+            if (rank <= 9)
+                score -= 10;
+        }
+
+        //-------------------------------------------------
+        // kísérő választás (pár + extra)
+        //-------------------------------------------------
+
+        if (move.Cards.Count == 3)
+        {
+            var g = move.Cards.GroupBy(c => c.Rank).ToList();
+
+            if (g.Any(x => x.Count() == 2))
+            {
+                var extra = g.First(x => x.Count() == 1).First();
+
+                int weakest = Hand.Min(c => (int)c.Rank);
+
+                // ha nem a leggyengébb lap a kísérő → büntetés
+                if ((int)extra.Rank != weakest)
+                {
+                    score -= 200;
+                }
+            }
+        }
+
+        //-------------------------------------------------
+        // talon üres -> agresszívebb játék
+        //-------------------------------------------------
+
+        if (talonEmpty)
+        {
+            score += move.Cards.Count * 20;
+        }
+
+        //-------------------------------------------------
+        // ha 2 lap marad -> erősebb maradjon
+        //-------------------------------------------------
+
+        if (remaining.Count == 2)
+        {
+            int weakest = remaining.Min(c => (int)c.Rank);
+            score -= weakest * 2;
+        }
+        // --------------------------------------------------
+        // ha egy lapot ad le, legyen a leggyengébb
+        // --------------------------------------------------
+
+        if (move.Cards.Count == 1)
+        {
+            int weakest = Hand.Min(c => (int)c.Rank);
+            int played = (int)move.Cards[0].Rank;
+
+            score -= (played - weakest) * 10;
+        }
+        var moveGroups = move.Cards.GroupBy(c => c.Rank);
+
+        foreach (var g in moveGroups)
+        {
+            if (g.Count() == 2)
+            {
+                int rank = (int)g.Key;
+
+                if (rank <= 9)
+                    score += 60;
+
+                if (rank >= 11)
+                    score -= 40;
+            }
+        }
+        Debug.Log(
+            string.Join(",", move.Cards.Select(c => c.Rank)) +
+            " -> " + score
+        );
+
+        return score;
+    }
+    public AIBeatDecision DecideBeat(List<CardView> targets, HandView handView, GameManager gm)
+    {
+        CardView bestCard = null;
+        int bestScore = int.MinValue;
+
+        bool talonEmpty = gm.deck.Cards.Count == 0;
+
+        foreach (var target in targets)
+        {
+            foreach (Transform t in handView.transform)
+            {
+                CardView attacker = t.GetComponent<CardView>();
+
+                if (attacker != null && gm.CanBeat(attacker.card, target.card))
+                {
+                    int score;
+
+                    if (talonEmpty)
+                    {
+                        score = 1000 - (int)attacker.card.Rank;
+                    }
+                    else
+                    {
+                        score = EvaluateBeat(attacker.card, target.card);
+                    }
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestCard = attacker;
+                    }
+                }
+            }
+        }
+
+        // ha nincs ütőlap, vagy a felvétel jobb
+        int pickupScore = EvaluatePickup(targets);
+        if (bestCard == null || (!talonEmpty && pickupScore > bestScore))
+        {
+            return new AIBeatDecision(true);
+        }
+
+        return new AIBeatDecision(bestCard, targets.First());
+    }
+    int EvaluateBeat(Card attacker, Card target)
+    {
+        int score = 0;
+        int attackerRank = (int)attacker.Rank;
+        int targetRank = (int)target.Rank;
+        score -= (attackerRank - targetRank) * 5;
+        if (attackerRank >= 12)
+            score -= 40;
+        if (attackerRank == 13)
+            score -= 60;
+        if (attackerRank <= 9)
+            score += 20;
+        if (targetRank >= 11)
+            score += 25;
+        return score;
+    }
+    int EvaluatePickup(List<CardView> targets)
+    {
+        int score = 0;
+        foreach (var t in targets)
+        {
+            int rank = (int)t.card.Rank;
+            if (rank >= 11)
+                score -= 5;
+            if (rank <= 9)
+                score -= 30;
+        }
+        return score;
     }
 }
