@@ -5,7 +5,6 @@ public class HandView : MonoBehaviour
 {
     public GameObject cardPrefab;
     private List<CardView> spawned = new List<CardView>();
-
     private bool isActive = false;
     public bool IsActive => isActive;
 
@@ -36,7 +35,6 @@ public class HandView : MonoBehaviour
             spawned.Add(cv);
         }
     }
-
     public List<CardView> GetSelectedCards()
     {
         List<CardView> selected = new List<CardView>();
@@ -66,5 +64,14 @@ public class HandView : MonoBehaviour
         }
         spawned.Clear();
     }
-
+    public List<Card> GetCards()
+    {
+        List<Card> cards = new List<Card>();
+        foreach (var cv in spawned)
+        {
+            if (cv != null && cv.card != null)
+                cards.Add(cv.card);
+        }
+        return cards;
+    }
 }

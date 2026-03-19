@@ -66,7 +66,6 @@ public class GameManager : MonoBehaviour
     }
     void UpdateTurn()
     {
-       // Debug.Log("Updateturn - currentplayerindex: " + currentPlayerIndex);
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(i == currentPlayerIndex);
 
@@ -187,7 +186,7 @@ public class GameManager : MonoBehaviour
 
         foreach (var cv in selectedCardViews)
         {
-            currentPlayer.Hand.Remove(cv.card);
+            currentPlayer.RemoveCard(cv.card);
 
             currentHandView.RemoveCard(cv);
 
@@ -546,6 +545,9 @@ public class GameManager : MonoBehaviour
         HideBeatButton();
         HidePickupButton();
         HidePlayButton();
+        for (int i = 0; i < handViews.Length; i++)
+            handViews[i].SetActive(false);
+
     }
     #endregion
 
@@ -612,7 +614,6 @@ public class GameManager : MonoBehaviour
             foreach (Transform t in playedArea)
             {
                 CardView cv = t.GetComponent<CardView>();
-
                 if (cv != null && !cv.IsBeaten)
                     targets.Add(cv);
             }
@@ -620,9 +621,9 @@ public class GameManager : MonoBehaviour
             if (targets.Count == 0)
                 yield break;
 
-            // AI dönt
             AIBeatDecision decision = ai.DecideBeat(targets, aiHandView, this);
 
+            // -------- FELVESZ --------
             if (decision.pickup)
             {
                 yield return new WaitForSeconds(0.5f);
@@ -630,20 +631,42 @@ public class GameManager : MonoBehaviour
                 yield break;
             }
 
-            yield return new WaitForSeconds(0.3f);
-
-            TryBeatWithCard(decision.card);
-
-            yield return new WaitForSeconds(0.2f);
-
-            if (pendingAttacker != null && pendingTargets.Count > 0)
+            // -------- TÖBB LAP ÜTÉSE --------
+            if (decision.cards.Count > 1)
             {
-                ResolveBeatSelection(decision.target);
+                for (int i = 0; i < decision.cards.Count; i++)
+                {
+                    yield return new WaitForSeconds(0.3f);
+                    TryBeatWithCard(decision.cards[i]);
+
+                    yield return new WaitForSeconds(0.2f);
+
+                    if (pendingAttacker != null && pendingTargets.Count > 0)
+                    {
+                        ResolveBeatSelection(decision.targets[i]);
+                    }
+                }
+
+                yield return new WaitForSeconds(0.3f);
+                OnBeatButtonClicked();
+            }
+            // -------- EGY LAP ÜTÉSE --------
+            else
+            {
+                yield return new WaitForSeconds(0.3f);
+                TryBeatWithCard(decision.cards[0]);
+
+                yield return new WaitForSeconds(0.2f);
+
+                if (pendingAttacker != null && pendingTargets.Count > 0)
+                {
+                    ResolveBeatSelection(decision.targets[0]);
+                }
+
+                yield return new WaitForSeconds(0.3f);
+                OnBeatButtonClicked();
             }
 
-            yield return new WaitForSeconds(0.3f);
-
-            OnBeatButtonClicked();
         }
     }
     void PickupAllCards()
@@ -651,14 +674,13 @@ public class GameManager : MonoBehaviour
         foreach (Transform t in playedArea)
         {
             CardView cv = t.GetComponent<CardView>();
-
             if (cv != null)
             {
                 cv.isSelected = true;
                 cv.UpdateOutline();
             }
+            continue;
         }
-
         OnPickupButtonClicked();
     }
 }
