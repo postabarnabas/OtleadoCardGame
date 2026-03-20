@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -29,7 +28,6 @@ public class GameManager : MonoBehaviour
     public GameObject beatButton;
     private List<Card> pickedUpThisTurn = new List<Card>();
     bool hasPickedUpThisTurn => pickedUpThisTurn.Count > 0;
-
     private CardView pendingAttacker = null;
     private List<CardView> pendingTargets = new();
     public TMPro.TextMeshProUGUI moreThanOneBeatSelectionText;
@@ -139,20 +137,15 @@ public class GameManager : MonoBehaviour
     void EndTurn()
     {
         StartCoroutine(RefillAfterDelay(players[currentPlayerIndex]));
-
         if (hasPickedUpThisTurn)
         {
-            currentPlayerIndex =
-                (currentPlayerIndex - 1 + players.Count) % players.Count;
+            currentPlayerIndex = (currentPlayerIndex-1+players.Count)%players.Count;
         }
-
         currentPhase = TurnPhase.Give;
         pickedUpThisTurn.Clear();
-
         ShowPlayButton();
         HidePickupButton();
         HideBeatButton();
-
         UpdateTurn();
     }
     //leadás
@@ -181,6 +174,11 @@ public class GameManager : MonoBehaviour
 
         if (!IsValidSelection(selectedCards))
         {
+            foreach (var cv in selectedCardViews)
+            {
+                cv.isSelected = !cv.isSelected;
+                cv.UpdateOutline();
+            }
             return;
         }
 
@@ -234,8 +232,7 @@ public class GameManager : MonoBehaviour
                 return false;
             }
 
-            if (defenderHandCount >= 3 && defenderHandCount <= 4 &&
-                !(count == 1 || count == 3))
+            if (defenderHandCount >= 3 && defenderHandCount <= 4 && !(count == 1 || count == 3))
             {
                 ShowError("Ebben az állásban csak 1 vagy 3 lap adható.");
                 return false;
@@ -345,7 +342,6 @@ public class GameManager : MonoBehaviour
             return;
 
         List<CardView> selected = new();
-
         foreach (Transform t in playedArea)
         {
             CardView cv = t.GetComponent<CardView>();
@@ -358,14 +354,12 @@ public class GameManager : MonoBehaviour
             ShowError("Nincs kiválasztott lap felvételhez");
             return;
         }
-
         foreach (var cv in selected)
         {
             pickedUpThisTurn.Add(cv.card);
             players[currentPlayerIndex].Hand.Add(cv.card);
             Destroy(cv.gameObject);
         }
-
         handViews[currentPlayerIndex].Refresh(players[currentPlayerIndex]);
 
         bool hasUnbeaten = false;
@@ -392,69 +386,62 @@ public class GameManager : MonoBehaviour
             ShowError("Felvett lappal ebben a körben nem üthetsz");
             return;
         }
-        List<CardView> targets = new List<CardView>();
+        List<CardView> beatable = new List<CardView>();
         foreach (Transform t in playedArea)
         {
             CardView cv = t.GetComponent<CardView>();
-            if (cv != null)
-                targets.Add(cv);
-        }
-
-        List<CardView> beatable = new List<CardView>();
-        foreach (var target in targets)
-        {
-            if (!target.IsBeaten && CanBeat(attacker.card, target.card))
-                beatable.Add(target);
+            if (cv != null && !cv.IsBeaten && CanBeat(attacker.card, cv.card))
+            {
+                beatable.Add(cv);
+            }
         }
         if (beatable.Count == 0)
         {
             ShowError("Ezzel a lappal egyet sem lehet ütni");
             return;
         }
-
         if (beatable.Count == 1)
         {
             BeatCard(attacker, beatable[0]);
             return;
         }
-
         pendingAttacker = attacker;
         pendingTargets = beatable;
-
         ShowMoreThanOneBeatSelectionText();
         HighlightBeatTargets(true);
     }
     public bool CanBeat(Card attacker, Card target)
     {
-        return (int)attacker.Rank > (int)target.Rank && (int)attacker.Suit==(int)target.Suit;
+        return (int)attacker.Rank > (int)target.Rank && attacker.Suit==target.Suit;
     }
     void BeatCard(CardView attacker, CardView target)
     {
+        // Logikai műveletek
         target.IsBeaten = true;
         target.BeatenBy = attacker;
         players[currentPlayerIndex].Hand.Remove(attacker.card);
 
+        // Vizuális frissítés
+        attacker.isHidden = false;
+        attacker.RefreshImage();
+
+        // Kártya pozicionálása a cél fölé
+        PositionCardAboveTarget(attacker, target);
+    }
+    void PositionCardAboveTarget(CardView attacker, CardView target)
+    {
         RectTransform attackerRt = attacker.GetComponent<RectTransform>();
         RectTransform targetRt = target.GetComponent<RectTransform>();
 
-        Vector3 targetWorldPos = targetRt.position;
-
         attackerRt.SetParent(beatArea, false);
 
-        Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            beatArea as RectTransform,
-            RectTransformUtility.WorldToScreenPoint(null, targetWorldPos),
-            null,
-            out localPoint
-        );
-
+        // Kiszámoljuk a pozíciót a beatArea koordinátarendszerében
+        Vector2 targetLocalPos = beatArea.InverseTransformPoint(targetRt.position);
         float yOffset = -targetRt.rect.height * 0.25f;
-        attackerRt.anchoredPosition = localPoint + new Vector2(0f, yOffset);
 
+        attackerRt.anchoredPosition = targetLocalPos + new Vector2(0f, yOffset);
         attackerRt.localScale = Vector3.one;
         attackerRt.SetAsLastSibling();
-
     }
     void HighlightBeatTargets(bool enable)
     {
@@ -467,7 +454,6 @@ public class GameManager : MonoBehaviour
     {
         return pendingAttacker != null && pendingTargets.Contains(target);
     }
-
     public void ResolveBeatSelection(CardView target)
     {
         BeatCard(pendingAttacker, target);
@@ -478,7 +464,6 @@ public class GameManager : MonoBehaviour
         pendingAttacker = null;
         pendingTargets.Clear();
     }
-
     public void OnBeatButtonClicked()
     {
         if (currentPhase != TurnPhase.Beat)
@@ -545,6 +530,7 @@ public class GameManager : MonoBehaviour
         HideBeatButton();
         HidePickupButton();
         HidePlayButton();
+        currentPlayerIndex = 7;
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(false);
 
