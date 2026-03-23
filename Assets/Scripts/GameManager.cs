@@ -33,7 +33,6 @@ public class GameManager : MonoBehaviour
     public TMPro.TextMeshProUGUI moreThanOneBeatSelectionText;
     public TMPro.TextMeshProUGUI errorText;
 
-
     void Start()
     {
         StartGame();
@@ -77,8 +76,7 @@ public class GameManager : MonoBehaviour
         }
     
     }
-
-    //gombok elrejtése és előhívása
+    //gombok és feliratok rejtése, hívása, hibaüzenetek
     #region
     void HidePlayButton()
     {
@@ -127,9 +125,7 @@ public class GameManager : MonoBehaviour
         errorText.text = message;
         errorText.color = Color.red;
         errorText.gameObject.SetActive(true);
-
         yield return new WaitForSeconds(duration);
-
         errorText.text = "";
         errorText.gameObject.SetActive(false);
     }
@@ -223,7 +219,6 @@ public class GameManager : MonoBehaviour
         int count = cards.Count;
         int defenderIndex = (currentPlayerIndex + 1) % players.Count;
         int defenderHandCount = players[defenderIndex].Hand.Count;
-
         if (deck.Cards.Count == 0 && defenderHandCount < 5)
         {
             if (defenderHandCount <= 2 && count != 1)
@@ -231,16 +226,12 @@ public class GameManager : MonoBehaviour
                 ShowError("Ebben az állásban csak 1 lap adható.");
                 return false;
             }
-
             if (defenderHandCount >= 3 && defenderHandCount <= 4 && !(count == 1 || count == 3))
             {
                 ShowError("Ebben az állásban csak 1 vagy 3 lap adható.");
                 return false;
             }
         }
-
-
-
         if (count == 1)
             return true;
         if (count == 2 || count == 4)
@@ -264,7 +255,6 @@ public class GameManager : MonoBehaviour
         CardRank r1 = cards[0].Rank;
         CardRank r2 = cards[1].Rank;
         CardRank r3 = cards[2].Rank;
-
         if (r1 == r2 && r2 == r3)
         {
             ShowError("Érvénytelen lapkombináció");
@@ -285,21 +275,17 @@ public class GameManager : MonoBehaviour
         {
             if (!distinctRanks.Contains(c.Rank)) distinctRanks.Add(c.Rank);
         }
-
         List<int> counts = new List<int>();
         foreach (var rank in distinctRanks)
         {
             int count = cards.Count(c => c.Rank == rank);
             counts.Add(count);
         }
-
         counts.Sort();
-
         if (counts.SequenceEqual(new List<int> { 1, 2, 2 })) return true;
         if (counts.SequenceEqual(new List<int> { 1, 4 })) return true;
         ShowError("Érvénytelen lapkombináció");
         return false;
-
     }
     void RefillHand(Player player, HandView handView)
     {
@@ -416,32 +402,27 @@ public class GameManager : MonoBehaviour
     }
     void BeatCard(CardView attacker, CardView target)
     {
-        // Logikai műveletek
         target.IsBeaten = true;
         target.BeatenBy = attacker;
         players[currentPlayerIndex].Hand.Remove(attacker.card);
 
-        // Vizuális frissítés
         attacker.isHidden = false;
         attacker.RefreshImage();
-
-        // Kártya pozicionálása a cél fölé
-        PositionCardAboveTarget(attacker, target);
+        bool isTopPlayer = (currentPlayerIndex==0);
+        PositionCardAboveTarget(attacker, target,isTopPlayer);
     }
-    void PositionCardAboveTarget(CardView attacker, CardView target)
+    void PositionCardAboveTarget(CardView attacker, CardView target, bool isTopPlayer)
     {
         RectTransform attackerRt = attacker.GetComponent<RectTransform>();
         RectTransform targetRt = target.GetComponent<RectTransform>();
-
         attackerRt.SetParent(beatArea, false);
-
-        // Kiszámoljuk a pozíciót a beatArea koordinátarendszerében
         Vector2 targetLocalPos = beatArea.InverseTransformPoint(targetRt.position);
         float yOffset = -targetRt.rect.height * 0.25f;
-
+        if (isTopPlayer)
+        {
+            yOffset = -yOffset;
+        }
         attackerRt.anchoredPosition = targetLocalPos + new Vector2(0f, yOffset);
-        attackerRt.localScale = Vector3.one;
-        attackerRt.SetAsLastSibling();
     }
     void HighlightBeatTargets(bool enable)
     {
@@ -515,7 +496,6 @@ public class GameManager : MonoBehaviour
             EndGame(winnerIndex: 1, loserIndex: 2);
             return;
         }
-
         if (players[1].Hand.Count == 0)
         {
             EndGame(winnerIndex: 2, loserIndex: 1);
@@ -536,7 +516,6 @@ public class GameManager : MonoBehaviour
 
     }
     #endregion
-
     //ai
     IEnumerator AITurn()
     {
@@ -612,7 +591,7 @@ public class GameManager : MonoBehaviour
             // -------- FELVESZ --------
             if (decision.pickup)
             {
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.8f);
                 PickupAllCards();
                 yield break;
             }
@@ -622,10 +601,10 @@ public class GameManager : MonoBehaviour
             {
                 for (int i = 0; i < decision.cards.Count; i++)
                 {
-                    yield return new WaitForSeconds(0.3f);
+                    yield return new WaitForSeconds(0.6f);
                     TryBeatWithCard(decision.cards[i]);
 
-                    yield return new WaitForSeconds(0.2f);
+                    yield return new WaitForSeconds(0.5f);
 
                     if (pendingAttacker != null && pendingTargets.Count > 0)
                     {
@@ -633,23 +612,23 @@ public class GameManager : MonoBehaviour
                     }
                 }
 
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(0.5f);
                 OnBeatButtonClicked();
             }
             // -------- EGY LAP ÜTÉSE --------
             else
             {
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(0.6f);
                 TryBeatWithCard(decision.cards[0]);
 
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(0.6f);
 
                 if (pendingAttacker != null && pendingTargets.Count > 0)
                 {
                     ResolveBeatSelection(decision.targets[0]);
                 }
 
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(0.6f);
                 OnBeatButtonClicked();
             }
 
