@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public enum CardSuit
 {
     Piros,
@@ -7,7 +5,6 @@ public enum CardSuit
     Makk,
     Tok
 }
-
 public enum CardRank
 {
     Hetes = 7,
@@ -19,7 +16,6 @@ public enum CardRank
     Kiraly = 13,
     Asz = 14
 }
-
 public class Card
 {
     public CardSuit Suit { get; private set; }

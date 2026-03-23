@@ -29,6 +29,7 @@ public class HandView : MonoBehaviour
             if (cv != null)
             {
                 cv.parentHand = this;
+                if(player.IsAI) cv.isHidden= true;
                 cv.SetCard(card);
             }
 

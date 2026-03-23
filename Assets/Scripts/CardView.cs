@@ -11,7 +11,7 @@ public class CardView : MonoBehaviour, IPointerClickHandler
     public bool IsBeaten = false;
     public CardView BeatenBy = null;
     public bool isPickupSelectable = false; 
-
+    public bool isHidden = false;
     public void OnPointerClick(PointerEventData eventData)
     {
         GameManager gm = FindObjectOfType<GameManager>();
@@ -60,7 +60,28 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         card = c;
         if (image == null)
             image = GetComponent<Image>();
+        if (isHidden)
+        {
+            image.sprite = Resources.Load<Sprite>("Cards/magyarkartya_kekhatlap");
+        }
+        else
+        {
+            image.sprite = Resources.Load<Sprite>($"Cards/{c.GetCardFileName()}");
+        }
+           
+    }
+    public void RefreshImage()
+    {
+        if (image == null)
+            image = GetComponent<Image>();
 
-        image.sprite = Resources.Load<Sprite>($"Cards/{c.GetCardFileName()}");
-    }    
+        if (isHidden)
+        {
+            image.sprite = Resources.Load<Sprite>("Cards/magyarkartya_kekhatlap");
+        }
+        else
+        {
+            image.sprite = Resources.Load<Sprite>($"Cards/{card.GetCardFileName()}");
+        }
+    }
 }
