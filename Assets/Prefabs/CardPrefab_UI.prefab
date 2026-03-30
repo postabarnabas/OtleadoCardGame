@@ -66,7 +66,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6904975156273383383, guid: 14dc1a75f0887f149a8f7d5ee0342fe5, type: 3}
+  m_Sprite: {fileID: 5311259013622088516, guid: 40aa102bece33214f9c5fbd9ca2e6ae8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -89,3 +89,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardView
   image: {fileID: 725920803385832330}
+  parentHand: {fileID: 0}
+  isSelected: 0
+  IsBeaten: 0
+  BeatenBy: {fileID: 0}
+  isPickupSelectable: 0
+  isHidden: 0
