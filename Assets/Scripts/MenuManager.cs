@@ -7,6 +7,7 @@ public class MenuManager : MonoBehaviour
     public GameObject personVsAIButton;
     public GameObject rulesPanel;
     public GameObject rulesbutton;
+    public CanvasGroup menuCards;
     public void StartPersonVsPerson()
     {
         GameSettings.playWithAI=false;
@@ -23,12 +24,14 @@ public class MenuManager : MonoBehaviour
         personVsAIButton.SetActive(false);
         personVsPersonButton.SetActive(false);
         rulesbutton.SetActive(false);
+        menuCards.alpha = 0.2f;
     }
     public void HideRules() 
     { 
-    rulesPanel.SetActive(false);
+        rulesPanel.SetActive(false);
         personVsAIButton.SetActive(true);
         personVsPersonButton.SetActive(true);
         rulesbutton.SetActive(true);
+        menuCards.alpha = 1;
     }
 }
