@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     public GameObject playButton;
     public GameObject pickupButton;
     public GameObject beatButton;
+    public GameObject cancelButton;
     private List<Card> pickedUpThisTurn = new List<Card>();
     bool hasPickedUpThisTurn => pickedUpThisTurn.Count > 0;
     private CardView pendingAttacker = null;
@@ -40,9 +41,7 @@ public class GameManager : MonoBehaviour
     void StartGame()
     {
         deck = new Deck();
-
         players.Clear();
-
         if (GameSettings.playWithAI)
             players.Add(new AIPlayer("AI"));
         else
@@ -60,6 +59,7 @@ public class GameManager : MonoBehaviour
         UpdateTurn();
         HidePickupButton();
         HideBeatButton();
+        HideCancelButton();
     }
     void UpdateTurn()
     {
@@ -101,6 +101,14 @@ public class GameManager : MonoBehaviour
     void ShowBeatButton()
     {
         beatButton.SetActive(true);
+    }
+    void ShowCancelButton()
+    {
+        cancelButton.SetActive(true);
+    }
+    void HideCancelButton()
+    {
+        cancelButton.SetActive(false);
     }
     void ShowMoreThanOneBeatSelectionText()
     {
@@ -155,15 +163,12 @@ public class GameManager : MonoBehaviour
         }
         HandView currentHandView = handViews[currentPlayerIndex];
         Player currentPlayer = players[currentPlayerIndex];
-
         var selectedCardViews = currentHandView.GetSelectedCards();
-
         if (selectedCardViews.Count == 0)
         {
             ShowError("Nincs kijelölt lap");
             return;
         }
-
         List<Card> selectedCards = new List<Card>();
         foreach (var cv in selectedCardViews)
             selectedCards.Add(cv.card);
@@ -177,13 +182,10 @@ public class GameManager : MonoBehaviour
             }
             return;
         }
-
         foreach (var cv in selectedCardViews)
         {
             currentPlayer.RemoveCard(cv.card);
-
             currentHandView.RemoveCard(cv);
-
             GameObject tableCard = Instantiate(cardPrefab);
             tableCard.transform.SetParent(playedArea, false);
             var tableCardView = tableCard.GetComponent<CardView>();
@@ -200,15 +202,9 @@ public class GameManager : MonoBehaviour
     void SwitchToOtherPlayerForBeat()
     {
         handViews[currentPlayerIndex].SetActive(false);
-
         currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
-
         handViews[currentPlayerIndex].SetActive(true);
-
-        currentPlayerText.text =
-            $"Üt / felvesz: Player {currentPlayerIndex + 1}";
-
-        // HA AI jön ütni
+        currentPlayerText.text = $"Üt / felvesz: Player {currentPlayerIndex + 1}";
         if (players[currentPlayerIndex].IsAI)
         {
             StartCoroutine(AITurn());
@@ -305,7 +301,6 @@ public class GameManager : MonoBehaviour
         {
             deckarea.SetActive(false);
         }
-
         CheckEndGame();
     }
     #endregion
@@ -326,7 +321,15 @@ public class GameManager : MonoBehaviour
     {
         if (currentPhase != TurnPhase.Beat)
             return;
-
+        List<CardView> beatenAttackers = new List<CardView>();
+        foreach (Transform t in playedArea)
+        {
+            CardView cv = t.GetComponent<CardView>();
+            if (cv != null && cv.IsBeaten && cv.BeatenBy != null)
+            {
+                beatenAttackers.Add(cv.BeatenBy);
+            }
+        }
         List<CardView> selected = new();
         foreach (Transform t in playedArea)
         {
@@ -334,7 +337,6 @@ public class GameManager : MonoBehaviour
             if (cv != null && cv.isSelected)
                 selected.Add(cv);
         }
-
         if (selected.Count == 0)
         {
             ShowError("Nincs kiválasztott lap felvételhez");
@@ -343,11 +345,18 @@ public class GameManager : MonoBehaviour
         foreach (var cv in selected)
         {
             pickedUpThisTurn.Add(cv.card);
-            players[currentPlayerIndex].Hand.Add(cv.card);
+            players[currentPlayerIndex].AddCard(cv.card);
             Destroy(cv.gameObject);
         }
+        foreach (var attacker in beatenAttackers)
+        {
+            if (attacker != null)
+            {
+                players[currentPlayerIndex].AddCard(attacker.card);
+                Destroy(attacker.gameObject);
+            }
+        }
         handViews[currentPlayerIndex].Refresh(players[currentPlayerIndex]);
-
         bool hasUnbeaten = false;
         foreach (Transform t in playedArea)
         {
@@ -393,7 +402,10 @@ public class GameManager : MonoBehaviour
         }
         pendingAttacker = attacker;
         pendingTargets = beatable;
+        Player current = players[currentPlayerIndex];
+        if (current.IsAI) return;
         ShowMoreThanOneBeatSelectionText();
+        ShowCancelButton();
         HighlightBeatTargets(true);
     }
     public bool CanBeat(Card attacker, Card target)
@@ -404,11 +416,10 @@ public class GameManager : MonoBehaviour
     {
         target.IsBeaten = true;
         target.BeatenBy = attacker;
-        players[currentPlayerIndex].Hand.Remove(attacker.card);
-
+        players[currentPlayerIndex].RemoveCard(attacker.card);
         attacker.isHidden = false;
         attacker.RefreshImage();
-        bool isTopPlayer = (currentPlayerIndex==0);
+        bool isTopPlayer = currentPlayerIndex==0;
         PositionCardAboveTarget(attacker, target,isTopPlayer);
     }
     void PositionCardAboveTarget(CardView attacker, CardView target, bool isTopPlayer)
@@ -438,10 +449,9 @@ public class GameManager : MonoBehaviour
     public void ResolveBeatSelection(CardView target)
     {
         BeatCard(pendingAttacker, target);
-
         HighlightBeatTargets(false);
         HideMoreThanOneBeatSelectionText();
-
+        HideCancelButton();
         pendingAttacker = null;
         pendingTargets.Clear();
     }
@@ -451,7 +461,6 @@ public class GameManager : MonoBehaviour
             return;
 
         List<CardView> toDestroy = new();
-
         foreach (Transform t in playedArea)
         {
             CardView target = t.GetComponent<CardView>();
@@ -462,7 +471,6 @@ public class GameManager : MonoBehaviour
                     toDestroy.Add(target.BeatenBy);
             }
         }
-
         if (toDestroy.Count == 0)
         {
             ShowError("Nincs elütött lap");
@@ -470,7 +478,6 @@ public class GameManager : MonoBehaviour
         }
         foreach (var cv in toDestroy)
             Destroy(cv.gameObject);
-
         bool hasUnbeaten = false;
         foreach (Transform t in playedArea)
         {
@@ -486,152 +493,128 @@ public class GameManager : MonoBehaviour
             EndTurn();
         }
     }
+    public void OnCancelButtonClicked()
+    {
+        if (pendingAttacker != null)
+        {
+            HighlightBeatTargets(false);
+            HideMoreThanOneBeatSelectionText();
+            HideCancelButton();
+            pendingAttacker = null;
+            pendingTargets.Clear();
+        }
+    }
     #endregion
     //játék vége
     #region
-    void CheckEndGame()
+    bool CheckEndGame()
     {
-        if (players[0].Hand.Count == 0)
+        if (players[0].Hand.Count ==0)
         {
             EndGame(winnerIndex: 1, loserIndex: 2);
-            return;
+            return true;
         }
-        if (players[1].Hand.Count == 0)
+        if (players[1].Hand.Count ==0)
         {
             EndGame(winnerIndex: 2, loserIndex: 1);
-            return;
+            return true;
         }
+        return false;
     }
     void EndGame(int winnerIndex, int loserIndex)
     {
-        currentPlayerText.text = "Győztes: Player" + winnerIndex
-                         + "\n" +"Vesztes: Player" + loserIndex;
-
+        string winnerName = players[winnerIndex -1].Name;
+        string loserName = players[loserIndex -1].Name;
+        currentPlayerText.text = $"Győztes: {winnerName}"+
+                               $"\nVesztes: {loserName}";
         HideBeatButton();
         HidePickupButton();
         HidePlayButton();
-        currentPlayerIndex = 7;
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(false);
-
     }
     #endregion
     //ai
+    #region
     IEnumerator AITurn()
     {
+        HidePlayButton();
+        HideBeatButton();
+        HidePickupButton();
         yield return new WaitForSeconds(1f);
-        AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
-
+        if (CheckEndGame())
+            yield break;
         if (currentPhase == TurnPhase.Give)
-        {
             yield return StartCoroutine(AIGiveCard());
-        }
         else if (currentPhase == TurnPhase.Beat)
-        {
             yield return StartCoroutine(AIBeatOrPickup());
-        }
     }
     IEnumerator AIGiveCard()
     {
         AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
         HandView aiHandView = handViews[currentPlayerIndex];
-
         int opponentIndex = (currentPlayerIndex + 1) % players.Count;
-
         int opponentCardCount = players[opponentIndex].Hand.Count;
-
         bool talonEmpty = deck.Cards.Count == 0;
-
         List<Card> cardsToGive = ai.SelectCardsToGive(opponentCardCount, talonEmpty);
-
         yield return new WaitForSeconds(0.7f);
-
-        foreach (Card card in cardsToGive)
+        foreach (Transform t in aiHandView.transform)
         {
-            foreach (Transform t in aiHandView.transform)
+            CardView cv = t.GetComponent<CardView>();
+            if (cv != null && cardsToGive.Contains(cv.card))
             {
-                CardView cv = t.GetComponent<CardView>();
-
-                if (cv != null && cv.card == card)
-                {
-                    cv.isSelected = true;
-                    cv.UpdateOutline();
-                    break;
-                }
+                cv.isSelected = true;
             }
         }
-
-        yield return new WaitForSeconds(0.4f);
-
+        yield return new WaitForSeconds(0.5f);
         OnPlayButtonClicked();
     }
     IEnumerator AIBeatOrPickup()
     {
         AIPlayer ai = players[currentPlayerIndex] as AIPlayer;
         HandView aiHandView = handViews[currentPlayerIndex];
-
         yield return new WaitForSeconds(0.4f);
-
         while (true)
         {
             List<CardView> targets = new();
-
             foreach (Transform t in playedArea)
             {
                 CardView cv = t.GetComponent<CardView>();
                 if (cv != null && !cv.IsBeaten)
                     targets.Add(cv);
             }
-
             if (targets.Count == 0)
                 yield break;
-
             AIBeatDecision decision = ai.DecideBeat(targets, aiHandView, this);
-
-            // -------- FELVESZ --------
             if (decision.pickup)
             {
                 yield return new WaitForSeconds(0.8f);
                 PickupAllCards();
                 yield break;
             }
-
-            // -------- TÖBB LAP ÜTÉSE --------
             if (decision.cards.Count > 1)
             {
                 for (int i = 0; i < decision.cards.Count; i++)
                 {
                     yield return new WaitForSeconds(0.6f);
                     TryBeatWithCard(decision.cards[i]);
-
                     yield return new WaitForSeconds(0.5f);
-
                     if (pendingAttacker != null && pendingTargets.Count > 0)
-                    {
                         ResolveBeatSelection(decision.targets[i]);
-                    }
                 }
-
                 yield return new WaitForSeconds(0.5f);
                 OnBeatButtonClicked();
             }
-            // -------- EGY LAP ÜTÉSE --------
             else
             {
                 yield return new WaitForSeconds(0.6f);
                 TryBeatWithCard(decision.cards[0]);
-
                 yield return new WaitForSeconds(0.6f);
-
                 if (pendingAttacker != null && pendingTargets.Count > 0)
-                {
                     ResolveBeatSelection(decision.targets[0]);
-                }
-
                 yield return new WaitForSeconds(0.6f);
                 OnBeatButtonClicked();
             }
-
         }
     }
     void PickupAllCards()
@@ -648,4 +631,5 @@ public class GameManager : MonoBehaviour
         }
         OnPickupButtonClicked();
     }
+    #endregion
 }
