@@ -29,16 +29,13 @@ public class CardView : MonoBehaviour, IPointerClickHandler
                 UpdateOutline();
                 return;
             }
-
             if (parentHand != null && parentHand.IsActive)
             {
                 gm.TryBeatWithCard(this);
                 return;
             }
-
             return;
         }
-
         if (gm.currentPhase == GameManager.TurnPhase.Give)
         {
             if (!parentHand.IsActive)
@@ -48,9 +45,6 @@ public class CardView : MonoBehaviour, IPointerClickHandler
             UpdateOutline();
         }
     }
-
-
-
     public void UpdateOutline()
     {
         image.color = isSelected ? Color.yellow : Color.white;
@@ -68,7 +62,6 @@ public class CardView : MonoBehaviour, IPointerClickHandler
         {
             image.sprite = Resources.Load<Sprite>($"Cards/{c.GetCardFileName()}");
         }
-           
     }
     public void RefreshImage()
     {

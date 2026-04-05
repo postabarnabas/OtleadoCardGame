@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class HandView : MonoBehaviour
@@ -12,40 +13,32 @@ public class HandView : MonoBehaviour
     {
         isActive = value;
     }
-
     public void Refresh(Player player)
     {
         if (player == null)
             return;
-
         Clear();
-
         foreach (var card in player.Hand)
         {
             GameObject g = Instantiate(cardPrefab, transform);
-
             var cv = g.GetComponent<CardView>();
-
             if (cv != null)
             {
                 cv.parentHand = this;
                 if(player.IsAI) cv.isHidden= true;
                 cv.SetCard(card);
             }
-
             spawned.Add(cv);
         }
     }
     public List<CardView> GetSelectedCards()
     {
         List<CardView> selected = new List<CardView>();
-
         foreach (var cv in spawned)
         {
             if (cv.isSelected)
                 selected.Add(cv);
         }
-
         return selected;
     }
     public void RemoveCard(CardView cv)
@@ -55,7 +48,6 @@ public class HandView : MonoBehaviour
     }
     public void Clear()
     {
-
         foreach (var g in spawned)
         {
             if (g != null)
