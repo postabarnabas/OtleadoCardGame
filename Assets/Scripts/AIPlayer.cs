@@ -54,7 +54,6 @@ public class AIPlayer : Player
     private void AddThreeCardMoves(List<List<Card>> moves)
     {
         var groups = Hand.GroupBy(c => c.Rank);
-
         foreach (var pair in groups.Where(g => g.Count() >= 2))
         {
             var pairCards = pair.Take(2).ToList();
@@ -72,24 +71,16 @@ public class AIPlayer : Player
     }
     private void AddFiveCardMoves(List<List<Card>> moves)
     {
-        var pairs = Hand.GroupBy(c => c.Rank).Where(g => g.Count() >= 2).OrderBy(g => g.Key).ToList();
-
-        // Minden lehetséges pár kombináció
+        var pairs = Hand.GroupBy(c=> c.Rank).Where(g=> g.Count() >=2).OrderBy(g =>g.Key).ToList();
         for (int i = 0; i < pairs.Count; i++)
         {
-            for (int j = i; j < pairs.Count; j++)  // j = i-től indul!
+            for (int j = i; j < pairs.Count; j++)
             {
-                // Első pár lapjai (2 vagy 4)
                 var firstPair = pairs[i].Take(2).ToList();
-
-                // Második pár lapjai (2 vagy 4)
                 var secondPair = pairs[j].Take(2).ToList();
-
-                // Ha ugyanaz a pár, és nincs legalább 4 lap belőle, skip
                 if (i == j && pairs[i].Count() < 4)
                     continue;
 
-                // Kísérő: olyan lap, ami nem a két pár rangjából való
                 foreach (var extra in Hand.Where(c =>c.Rank != pairs[i].Key && c.Rank != pairs[j].Key))
                 {
                     List<Card> moveCards = new List<Card>
@@ -100,18 +91,14 @@ public class AIPlayer : Player
                     secondPair[1],
                     extra
                     };
-
-                    // Ha ugyanaz a pár volt, a 4 lapból 2-2-t veszünk
                     if (i == j)
                     {
-                        // Négy egyforma esetén a 4 lapból választunk 2-t
                         var fourCards = pairs[i].ToList();
-                        moveCards[0] = fourCards[0];
-                        moveCards[1] = fourCards[1];
-                        moveCards[2] = fourCards[2];
+                        moveCards[0] =fourCards[0];
+                        moveCards[1] =fourCards[1];
+                        moveCards[2] =fourCards[2];
                         moveCards[3] = fourCards[3];
                     }
-
                     moves.Add(moveCards);
                 }
             }
@@ -123,9 +110,7 @@ public class AIPlayer : Player
             return 10000;
 
         int score = 0;
-
         List<Card> remaining = new List<Card>(Hand);
-
         foreach (var card in move)
             remaining.Remove(card);
 
@@ -141,53 +126,38 @@ public class AIPlayer : Player
             var card = move[0];
             int rank = (int)card.Rank;
             int weakest = Hand.Min(c => (int)c.Rank);
-
-            // 1. szabály: nem a leggyengébb lapot adja le?
             if (rank != weakest)
                 score -= (rank - weakest) * 10;
 
-            // 2. szabály: erős lapot ad le egyesével?
-            if (rank >= 11) // felső vagy erősebb
+            if (rank >= 12)
                 score -= 120;
 
-            if (rank >= 13) // ász
-                score -= 150; // ez már + az előzőhöz
+            if (rank == 14)
+                score -= 150;
         }
-
         if (move.Count == 5)
             score += 350;
-
         else if (move.Count == 3)
             score += 250;
-
         else
             score += 40;
 
-        //-------------------------------------------------
         // milyen lapokat ad le
-        //-------------------------------------------------
-
         foreach (var card in move)
         {
-            int rank = (int)card.Rank;
-
-            // gyenge lap leadása jó
-            if (rank <= 9)
-                score += 20;
-
-            if (rank == 10)
-                score += 15;
-            if (rank == 11)
-                score += 10;
-
-            if (rank == 12)
-                score -= 20;
-
-            if (rank == 13)
-                score -= 40;
-
-            if (rank == 14)
-                score -= 80;
+            int rank =(int)card.Rank;
+            if (rank<=9)
+                score +=20;
+            if (rank==10)
+                score +=15;
+            if (rank==11)
+                score +=10;
+            if (rank==12)
+                score -=20;
+            if (rank==13)
+                score -=60;
+            if (rank==14)
+                score -=80;
         }
 
         //-------------------------------------------------
@@ -195,33 +165,25 @@ public class AIPlayer : Player
         //-------------------------------------------------
 
         var groups = remaining.GroupBy(c => c.Rank);
-
         foreach (var g in groups)
         {
-            if (g.Count() == 4)
-                score += 150;
-
-            if (g.Count() == 3)
-                score += 100;
-
-            if (g.Count() == 2)
+            if (g.Count() ==4)
+                score += 70;
+            if (g.Count() ==3)
+                score += 60;
+            if (g.Count() ==2)
             {
-                int rank = (int)g.Key;
-
-                if (rank == 10)
-                    score += 30;
-
-                if (rank == 11)
-                    score += 50;
-
-                if (rank == 12)
-                    score += 80;
-
-                if (rank == 13)
+                int rank =(int)g.Key;
+                if (rank==10)
+                    score += 20;
+                if (rank==11)
+                    score += 40;
+                if (rank==12)
+                    score += 60;
+                if (rank==13)
+                    score += 90;
+                if (rank==14)
                     score += 120;
-
-                if (rank == 14)
-                    score += 160;
             }
         }
 
@@ -244,18 +206,23 @@ public class AIPlayer : Player
         if (move.Count == 3)
         {
             var g = move.GroupBy(c => c.Rank).ToList();
-
+            if (g.Any(x => x.Count() == 2))
+            {
+                var extra = g.First(x=> x.Count()==1).First();
+                int weakest = Hand.Min(c => (int)c.Rank);
+                if ((int)extra.Rank !=weakest)
+                    score -= 200;
+            }
+        }
+        if (move.Count == 5)
+        {
+            var g = move.GroupBy(c => c.Rank).ToList();
             if (g.Any(x => x.Count() == 2))
             {
                 var extra = g.First(x => x.Count() == 1).First();
-
                 int weakest = Hand.Min(c => (int)c.Rank);
-
-                // ha nem a leggyengébb lap a kísérő → büntetés
                 if ((int)extra.Rank != weakest)
-                {
                     score -= 200;
-                }
             }
         }
 
@@ -265,27 +232,43 @@ public class AIPlayer : Player
 
         if (talonEmpty)
         {
-            score += move.Count * 20;
+            if (move.Count == 5) score += 500;
+            else if (move.Count == 3) score += 300;
+            else score += 100;
+
+            
         }
-
-        //-------------------------------------------------
-        // ha 2 lap marad -> erősebb maradjon
-        //-------------------------------------------------
-
-        if (remaining.Count == 2)
+        if (Hand.Count == 2&&talonEmpty)
         {
-            int weakest = remaining.Min(c => (int)c.Rank);
-            score -= weakest * 2;
+            score = 0;
+            foreach (var card in move)
+            {
+                int rank = (int)card.Rank;
+                switch (rank)
+                {
+                    case 7: score += 0; break;
+                    case 8: score += 5; break;
+                    case 9: score += 10; break;
+                    case 10: score += 20; break;
+                    case 11: score += 40; break;
+                    case 12: score += 60; break;
+                    case 13: score += 80; break;
+                    case 14: score += 100; break;
+                    default: score += 0; break;
+                }
+            }
         }
-        
+        /*
         Debug.Log(
             string.Join(",", move.Select(c => c.Rank)) +
             " -> " + score
-        );
+        );*/
 
         return score;
     }
     #endregion
+    //ütéshez
+    #region
     public AIBeatDecision DecideBeat(List<CardView> targets, HandView handView, GameManager gm)
     {
         bool talonEmpty = gm.deck.Cards.Count == 0;
@@ -293,9 +276,6 @@ public class AIPlayer : Player
         int handSize = currentHand.Count;
         var attackersInHand = handView.GetComponentsInChildren<CardView>();
 
-        // ------------------------------------------------------------
-        // 1. HA SOK LAP VAN (több mint 7) -> ÜSSÖN MINDENT, AMIT TUD
-        // ------------------------------------------------------------
         if (handSize > 7 && !talonEmpty)
         {
             List<CardView> selectedAttackers = new List<CardView>();
@@ -311,8 +291,7 @@ public class AIPlayer : Player
 
                 foreach (var attacker in attackersInHand)
                 {
-                    if (attacker != null && handCopy.Contains(attacker.card) &&
-                        gm.CanBeat(attacker.card, target.card))
+                    if (attacker != null && handCopy.Contains(attacker.card) && gm.CanBeat(attacker.card, target.card))
                     {
                         int rank = (int)attacker.card.Rank;
                         if (rank < weakestRank)
@@ -337,9 +316,7 @@ public class AIPlayer : Player
                 return new AIBeatDecision(selectedAttackers, selectedTargets);
             }
         }
-        // ------------------------------------------------------------
-        // 2. LEGJOBB EGYEDI ÜTÉS KERESÉSE
-        // ------------------------------------------------------------
+
         CardView bestCard = null;
         CardView bestTarget = null;
         int bestScore = int.MinValue;
@@ -353,7 +330,6 @@ public class AIPlayer : Player
                 { 
                     List<Card> remaining = new List<Card>(currentHand);
                     remaining.Remove(attacker.card);
-
                     int score;
                     if (talonEmpty)
                     {
@@ -366,7 +342,7 @@ public class AIPlayer : Player
                         score = EvaluateBeat(attacker.card, target.card, remaining);
                     }
 
-                    Debug.Log($"[ÜTÉS] {attacker.card} -> {target.card} = {score} pont");
+                    Debug.Log($"[ÜTÉS] {attacker.card.Suit} {attacker.card.Rank} -> {target.card.Suit} {target.card.Rank} = {score} pont");
 
                     // Ha jobb, mint az eddigi legjobb, eltároljuk
                     if (score > bestScore)
@@ -379,18 +355,11 @@ public class AIPlayer : Player
             }
         }
 
-        // ------------------------------------------------------------
-        // 3. FELVÉTEL ÉRTÉKELÉSE
-        // ------------------------------------------------------------
         int pickupScore = EvaluatePickup(targets, currentHand, talonEmpty);
 
-        // ------------------------------------------------------------
-        // 4. DÖNTÉS: ÜTÉS VAGY FELVÉTEL?
-        // ------------------------------------------------------------
         Debug.Log($"[DÖNTÉS] Legjobb ütés: {bestCard?.card} = {bestScore} pont");
         Debug.Log($"[DÖNTÉS] Felvétel pontszáma: {pickupScore}");
 
-        // Ha nincs ütési lehetőség -> felvétel
         if (bestCard == null)
         {
             Debug.Log("[DÖNTÉS] Nincs ütési lehetőség -> FELVÉTEL");
@@ -404,7 +373,6 @@ public class AIPlayer : Player
             return new AIBeatDecision(true);
         }
 
-        // Egyébként ütés
         Debug.Log($"[DÖNTÉS] Ütés választva: {bestCard.card} -> {bestTarget.card}");
         return new AIBeatDecision(bestCard, bestTarget);
     }
@@ -419,8 +387,9 @@ public class AIPlayer : Player
         score -= (attackerRank - targetRank) * 5;
 
         // Erős lapokkal ütés büntetése
-        if (attackerRank >= 12) score -= 40;  // Felső, király
-        if (attackerRank == 13) score -= 60;  // Ász
+        if (attackerRank == 12) score -= 20;
+        if (attackerRank == 13) score -= 30;
+        if (attackerRank == 14) score -= 40;
 
         // Gyenge lapokkal ütés jutalmazása
         if (attackerRank <= 11) score += 50;
@@ -435,7 +404,6 @@ public class AIPlayer : Player
         {
             if (g.Count() >= 2) score += 75;
         }
-
         return score;
     }
     int EvaluatePickup(List<CardView> targets, List<Card> currentHand, bool talonEmpty)
@@ -444,7 +412,6 @@ public class AIPlayer : Player
         foreach (var t in targets)
         {
             int rank = (int)t.card.Rank;
-            score = 20;
             // Gyenge lap felvétele kisebb büntetés
             if (rank <= 9) score -= 30;
 
@@ -458,12 +425,13 @@ public class AIPlayer : Player
 
             foreach (var g in groups)
             {
-                if (g.Count() == 2) score += 40;   // Pár lesz belőle
-                if (g.Count() == 3) score += 45;   // Hármas lesz belőle
-                if (g.Count() == 4) score += 50;  // Négyes lesz belőle
+                if (g.Count() == 2) score += 25;
+                if (g.Count() == 3) score += 30;
+                if (g.Count() == 4) score += 35;
             }
         }
-        if (talonEmpty) score -= targets.Count * 20;
+        if (talonEmpty) score = -50;
         return score;
     }
+    #endregion
 }
