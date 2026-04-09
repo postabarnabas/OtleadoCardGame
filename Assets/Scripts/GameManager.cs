@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -27,6 +28,8 @@ public class GameManager : MonoBehaviour
     public GameObject pickupButton;
     public GameObject beatButton;
     public GameObject cancelButton;
+    public GameObject newGameButton;
+    public GameObject backButton;
     private List<Card> pickedUpThisTurn = new List<Card>();
     bool hasPickedUpThisTurn => pickedUpThisTurn.Count > 0;
     private CardView pendingAttacker = null;
@@ -66,15 +69,12 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(i == currentPlayerIndex);
 
-        currentPlayerText.text =
-            $"Lapot ad le: Player {currentPlayerIndex + 1}";
-
+        currentPlayerText.text =$"Lapot ad le: Player {currentPlayerIndex +1}";
         Player current = players[currentPlayerIndex];
         if (current.IsAI)
         {
             StartCoroutine(AITurn());
         }
-    
     }
     //gombok és feliratok rejtése, hívása, hibaüzenetek
     #region
@@ -109,6 +109,14 @@ public class GameManager : MonoBehaviour
     void HideCancelButton()
     {
         cancelButton.SetActive(false);
+    }
+    void ShowNewGameButton()
+    {
+        newGameButton.SetActive(true);
+    }
+    void ShowBackButton()
+    {
+        backButton.SetActive(true);
     }
     void ShowMoreThanOneBeatSelectionText()
     {
@@ -530,8 +538,18 @@ public class GameManager : MonoBehaviour
         HideBeatButton();
         HidePickupButton();
         HidePlayButton();
+        ShowBackButton();
+        ShowNewGameButton();
         for (int i = 0; i < handViews.Length; i++)
             handViews[i].SetActive(false);
+    }
+    public void OnNewGameButtonClicked()
+    {
+        SceneManager.LoadScene("Game");
+    }
+    public void OnBackButtonClicked()
+    {
+        SceneManager.LoadScene("Menu");
     }
     #endregion
     //ai
