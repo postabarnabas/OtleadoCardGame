@@ -129,19 +129,19 @@ public class GameManager : MonoBehaviour
         moreThanOneBeatSelectionText.gameObject.SetActive(false);
     }
     Coroutine errorCoroutine;
-    void ShowError(string message, float duration = 2.5f)
+    void ShowError(string message)
     {
         if (errorCoroutine != null)
             StopCoroutine(errorCoroutine);
 
-        errorCoroutine = StartCoroutine(ShowErrorRoutine(message, duration));
+        errorCoroutine = StartCoroutine(ShowErrorRoutine(message));
     }
-    IEnumerator ShowErrorRoutine(string message, float duration)
+    IEnumerator ShowErrorRoutine(string message)
     {
         errorText.text = message;
         errorText.color = Color.red;
         errorText.gameObject.SetActive(true);
-        yield return new WaitForSeconds(duration);
+        yield return new WaitForSeconds(2.5f);
         errorText.text = "";
         errorText.gameObject.SetActive(false);
     }
@@ -164,11 +164,6 @@ public class GameManager : MonoBehaviour
     #region
     public void OnPlayButtonClicked()
     {
-        if (currentPhase != TurnPhase.Give)
-        {
-            Debug.Log("Nem leadó fázis");
-            return;
-        }
         HandView currentHandView = handViews[currentPlayerIndex];
         Player currentPlayer = players[currentPlayerIndex];
         var selectedCardViews = currentHandView.GetSelectedCards();
@@ -327,8 +322,6 @@ public class GameManager : MonoBehaviour
     }
     public void OnPickupButtonClicked()
     {
-        if (currentPhase != TurnPhase.Beat)
-            return;
         List<CardView> beatenAttackers = new List<CardView>();
         foreach (Transform t in playedArea)
         {
@@ -338,7 +331,7 @@ public class GameManager : MonoBehaviour
                 beatenAttackers.Add(cv.BeatenBy);
             }
         }
-        List<CardView> selected = new();
+        List<CardView> selected= new();
         foreach (Transform t in playedArea)
         {
             CardView cv = t.GetComponent<CardView>();
@@ -358,7 +351,7 @@ public class GameManager : MonoBehaviour
         }
         foreach (var attacker in beatenAttackers)
         {
-            if (attacker != null)
+            if (attacker!= null)
             {
                 players[currentPlayerIndex].AddCard(attacker.card);
                 Destroy(attacker.gameObject);
@@ -414,20 +407,20 @@ public class GameManager : MonoBehaviour
         if (current.IsAI) return;
         ShowMoreThanOneBeatSelectionText();
         ShowCancelButton();
-        HighlightBeatTargets(true);
+        HighlightTargets(true);
     }
     public bool CanBeat(Card attacker, Card target)
     {
-        return (int)attacker.Rank > (int)target.Rank && attacker.Suit==target.Suit;
+        return (int)attacker.Rank> (int)target.Rank && attacker.Suit==target.Suit;
     }
     void BeatCard(CardView attacker, CardView target)
     {
         target.IsBeaten = true;
-        target.BeatenBy = attacker;
+        target.BeatenBy= attacker;
         players[currentPlayerIndex].RemoveCard(attacker.card);
         attacker.isHidden = false;
         attacker.RefreshImage();
-        bool isTopPlayer = currentPlayerIndex==0;
+        bool isTopPlayer= currentPlayerIndex==0;
         PositionCardAboveTarget(attacker, target,isTopPlayer);
     }
     void PositionCardAboveTarget(CardView attacker, CardView target, bool isTopPlayer)
@@ -443,11 +436,11 @@ public class GameManager : MonoBehaviour
         }
         attackerRt.anchoredPosition = targetLocalPos + new Vector2(0f, yOffset);
     }
-    void HighlightBeatTargets(bool enable)
+    void HighlightTargets(bool enable)
     {
         foreach (var cv in pendingTargets)
         {
-            cv.image.color = enable ? Color.cyan : Color.white;
+            cv.image.color = enable ?Color.cyan: Color.white;
         }
     }
     public bool IsSelectingBeatTarget(CardView target)
@@ -457,7 +450,7 @@ public class GameManager : MonoBehaviour
     public void ResolveBeatSelection(CardView target)
     {
         BeatCard(pendingAttacker, target);
-        HighlightBeatTargets(false);
+        HighlightTargets(false);
         HideMoreThanOneBeatSelectionText();
         HideCancelButton();
         pendingAttacker = null;
@@ -465,9 +458,6 @@ public class GameManager : MonoBehaviour
     }
     public void OnBeatButtonClicked()
     {
-        if (currentPhase != TurnPhase.Beat)
-            return;
-
         List<CardView> toDestroy = new();
         foreach (Transform t in playedArea)
         {
@@ -503,12 +493,12 @@ public class GameManager : MonoBehaviour
     }
     public void OnCancelButtonClicked()
     {
-        if (pendingAttacker != null)
+        if (pendingAttacker!= null)
         {
-            HighlightBeatTargets(false);
+            HighlightTargets(false);
             HideMoreThanOneBeatSelectionText();
             HideCancelButton();
-            pendingAttacker = null;
+            pendingAttacker= null;
             pendingTargets.Clear();
         }
     }

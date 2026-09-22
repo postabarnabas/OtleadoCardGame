@@ -47,11 +47,11 @@ public class HandView : MonoBehaviour
     }
     public void Clear()
     {
-        foreach (var g in spawned)
+        foreach (var c in spawned)
         {
-            if (g != null)
+            if (c != null)
             {
-                Destroy(g.gameObject);
+                Destroy(c.gameObject);
             }
         }
         spawned.Clear();
